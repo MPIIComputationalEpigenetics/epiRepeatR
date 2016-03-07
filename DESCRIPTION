@@ -1,0 +1,35 @@
+Package: epiRepeatR
+Title: epiRepeatR
+Description: An R package for anlyzing the epigenetics of repetitive elements
+Authors@R: c(
+    person("Fabian", "Mueller", email = "fmueller@mpi-inf.mpg.de",
+    role = c("aut", "cre")))
+Date: 2016-02-22
+License: GPL-3
+Version: 0.2
+Depends:
+	muPipeR,
+    RnBeads,
+    Rsamtools,
+    Biostrings,
+    jsonlite,
+    igraph
+Imports:
+Suggests:
+    argparse
+Collate:
+	'utils.R'
+	'config.R'
+	'dendrogram_extension.R'
+	'diagram_extension.R'
+	'PipelineGraph-class.R'
+	'AnalysisManager-class.R'
+	'RepeatReference-class.R'
+	'RepeatTree-class.R'
+	'RepeatAlignment-class.R'
+	'preprocessing.R'
+	'alignment.R'
+	'methylationCalling.R'
+	'plots.R'
+	'main.R'
+RoxygenNote: 5.0.1

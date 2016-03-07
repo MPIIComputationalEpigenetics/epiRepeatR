@@ -1,0 +1,134 @@
+# Analyzing the Epigenetics of Repetitive Elements with epiRepeatR
+*February 12, 2016*
+
+##  Installation and set up
+`epiRepeatR` can be directly installed from [github](https://github.com/MPIIComputationalEpigenetics/epiRepeatR)
+```{r eval=FALSE}
+library(devtools)
+install_github("MPIIComputationalEpigenetics/epiRepeatR")
+```
+
+You need the following additional programs installed on your system:
+
+* `samtools` can be obtained from http://samtools.sourceforge.net/
+* For bisulfite alignment: `bsmap` can be obtained from https://code.google.com/archive/p/bsmap/
+* For ChIP-seq alignment: `bwa` can be obtained from http://bio-bwa.sourceforge.net/
+
+You also need to make sure the executables can be found (i.e. by including them in your `PATH` variable).
+
+## Preliminaries
+Loading the `epiRepeatR` package
+```{r warning=FALSE, message=FALSE}
+library(epiRepeatR)
+```
+
+### Preparing the repeat reference
+
+First, get the appropiate `fasta` file for the genome of your choice following these setps:
+
+1. Go to http://www.girinst.org/repbase/
+1. If you did not already do this, register (free)
+1. On the main page: click on "Browse RU"
+1. Change to fasta format
+1. Select apropriate taxon
+1. Download [Taxon] __and ancestral (shared)__ repeats. You need to specify your RepBase username and password.
+
+## Epigenome analysis of repetitive elements
+
+### Configuring the analysis
+
+#### Preparing the analysis annotation
+Input files and annotations for the various epigenetic marks at various levels are specified in file annotation tables. They are specified as tab-separated files with a header line. Here's an example:
+
+fileName | sampleName | mark | dataType | healthStatus | analysisStep
+--- | --- | --- | --- | --- | ---
+sample01_WGBS.bam | sample01 | DNAmeth | WGBS | control | seqReads
+sample01_Input.bam | sample01 | Input | Input | control | seqReads
+sample01_H3K9me3.bam | sample01 | H3K9me3 | ChIPseq | control | seqReads
+sample01_H3K4me3.bam | sample01 | H3K4me3 | ChIPseq | control | seqReads
+sample02_WGBS.bam | sample02 | DNAmeth | WGBS | control | seqReads
+sample02_Input.bam | sample02 | Input | Input | control | seqReads
+sample02_H3K9me3.bam | sample02 | H3K9me3 | ChIPseq | control | seqReads
+sample02_H3K4me3.bam | sample02 | H3K4me3 | ChIPseq | control | seqReads
+sample03_WGBS.bam | sample03 | DNAmeth | WGBS | sick | seqReads
+sample03_Input.bam | sample03 | Input | Input | sick | seqReads
+sample03_H3K9me3.bam | sample03 | H3K9me3 | ChIPseq | sick | seqReads
+sample03_H3K4me3.bam | sample03 | H3K4me3 | ChIPseq | sick | seqReads
+
+Each row must contain the following columns:
+
+Column name | Description
+--- | ---
+`fileName` | Location of the file on disc
+`sampleName` | identifier of the sample the file belongs to
+`mark` | epigenetic mark that is being assayed. Can be anything, but has to be consistent for later annotation
+`dataType` | `WGBS` or `RRBS` for bisulfite sequencing. `ChIPseq` for immunoprecipitation signal and `Input` for input/whole cell extract from ChIP-seq experiments
+`analysisStep` | Which analysis step does the file belong to. See table below for possible values.
+
+All other columns (such as `healthStatus` in the example above) are considered annotation that can be used for sample grouping.
+
+Typically, you will start from sequencing reads in BAM format (aligned or unaligned). In this case specify `seqReads` as analysis step. However, you can also input files from intermediate steps of the repeat analysis if you have them available. Here is a list of analysis steps and associated file types that can be used as input:
+
+`analysisStep` | Description
+--- | ---
+`seqReads` | Sequencing reads in aligned or unaligned BAM file from which applicable reads will be extracted and filtered from.
+`bamExtract` | Sequencing reads in aligned or unaligned BAM file which have already been extracted. No filtering step is conducted.
+`repeatAlignment` | Sequencing reads already aligned to the reference of repetitive elements as BAM file.
+`methCalling` | `R` dataset file (RDS) of called methylation levels for each repetitive element CpG computed from repeat alignments.
+`chipQuantification` | `R` dataset file (RDS) of quantified ChIP-seq enrichment scoress for each repetitive elemen from repeat alignments.
+
+#### Setting analysis options
+You can configure the analysis using config files. They are specified in JSON format and look like this:
+```json
+{
+  "refFasta": "Homo_sapiens_all.fa",
+  "species": "human",
+  "tempDir": "temp",
+  "n.processes": 0,
+  "samtools.exec": "samtools",
+  "inputBam.mappingStatus": "all",
+  "aligner.chip": "chip_bwa",
+  "alignment.params.chip": "-t 8 -q 20 -b",
+  "aligner.bs": "bsmap",
+  "alignment.params.bs": "-g 3 -v 0.2",
+  "plotRepTree.meth.minCpGs": 2,
+  "plotRepTree.meth.minReads": 100
+}
+```
+You can load them using
+```{r eval=FALSE}
+loadConfig("config.json")
+```
+
+Alternatively or in addition, you can specify individual options from within `R`:
+```{r}
+setConfigElement("species", "human")
+```
+To see a description of all options you can specify:
+```{r eval=FALSE}
+?setConfigElement
+```
+
+### Running the analysis (R)
+For running the enire analysis you need to specify the output directory (`anaDir` in the following code) and the prepared file annotation table `fileTable.tsv` in the following code):
+```{r eval=FALSE}
+anaDir <- "repeatAnalysis"
+runAnalysis(anaDir, fileTable="fileTable.tsv")
+```
+If your analysis stops at some point, you can resume the analysis again using `runAnalysis` and specifying the same output directory as before (assuming it still exists).
+
+### Running the analysis (command line)
+You can also run the analysis comfortable from the command line. To do so, download the`epiRepeatR.R` file from our github repository (https://github.com/MPIIComputationalEpigenetics/epiRepeatR/blob/master/inst/extdata/epiRepeatR.R) and then execute it using `Rscript`:
+```
+Rscript epiRepeatR.R --analysisDir $ANADIR --fileTable fileTable.tsv --configFile config.json
+```
+or in short form
+```
+Rscript epiRepeatR.R -a $ANADIR -f fileTable.tsv -c config.json
+```
+You can also omit the config file and manually set some of the options from the command line. However, note that currently only a limited set of options is supported from the command line.
+```
+Rscript epiRepeatR.R -a $ANADIR -f fileTable.tsv --referenceFasta Homo_sapiens_all.fa --numProcesses 4
+```
+---
+author: *Fabian Müller* <<fmueller@mpi-inf.mpg.de>>
