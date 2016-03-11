@@ -47,6 +47,13 @@ runAnalysis <- function(anaDir, fileTable=NULL, resetToStep=NULL, submission="sy
 
 	if (!newAna && !is.null(resetToStep)){
 		pipr <- resetStep(pipr, resetToStep)
+		# overwrite existing configuration file
+		cfgDir <- file.path(getDir(pipr, "base"), "config")
+		cfgSavePath <- file.path(cfgDir, "config.json")
+		if (file.exists(cfgSavePath)){
+			logger.warning(c("Overwriting saved configuration file @",cfgSavePath))
+		}
+		saveConfig(cfgSavePath)
 	}
 	if (submission == "system"){
 		cmdr <- do.call("CommandRsystem", c(list(logDir=getDir(pipr, "log")), cmdrArgs))
@@ -55,5 +62,6 @@ runAnalysis <- function(anaDir, fileTable=NULL, resetToStep=NULL, submission="sy
 	} else {
 		logger.error("Could not execute pipeline: unknown submission type.")
 	}
+
 	run(pipr, cmdr, logCommands=TRUE)
 }

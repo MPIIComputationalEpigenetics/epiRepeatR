@@ -12,6 +12,7 @@
 .config$samtools.exec <- "samtools" # location of the samtools executable
 .config$tempDir <- tempdir()
 .config$inputBam.mappingStatus <- "all"
+.config$plotRepTree.dendroMethod <- "repeatFamily"
 .config$plotRepTree.meth.minCpGs  <- 2
 .config$plotRepTree.meth.minReads <- 100
 #assignInNamespace(".config", .config, "epiRepeatR") # to manually assign in non-exported variables

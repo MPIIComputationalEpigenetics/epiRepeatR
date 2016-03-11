@@ -25,9 +25,12 @@ plotHeatmap <- function(X, xmin=0, xmax=1, ymin=0, ymax=1, colorGradient=colorpa
 	
 	matrixMidPoints.x <- matrix(rep(gridMidPoints.x, nrow(X)), ncol=ncol(X), byrow=TRUE)
 	matrixMidPoints.y <- matrix(rep(gridMidPoints.y, ncol(X)), ncol=ncol(X), byrow=FALSE)
+	X.trunc <- t(X)
+	X.trunc[X.trunc < zlim[1]] <- zlim[1]
+	X.trunc[X.trunc > zlim[2]] <- zlim[2]
 	image(
 		gridlinePos.x, gridlinePos.y,
-		t(X),
+		X.trunc,
 		zlim=zlim,
 		axes=FALSE, col=colorGradient, add=TRUE
 	)
@@ -57,6 +60,7 @@ plotHeatmap <- function(X, xmin=0, xmax=1, ymin=0, ymax=1, colorGradient=colorpa
 #' @param groupColors	vector of colors to be used for the sample groups
 #' @param txt.cex		base text size to be used in the plot
 #' @param leafColors	colors of the leaf nodes/repeat elements in the same order as in \code{getRepeatIds(repRef)}. set to \code{NULL} (default) to disable custom leaf color
+#' @param dendroMethod  method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
 #' @return nothing of particular interest
 #'
 #' @details
@@ -74,13 +78,14 @@ repPlot_groupSummary <- function(
 		groupColors=rep(c("#1B9E77","#D95F02","#7570B3","#E7298A","#66A61E","#E6AB02","#A6761D","#666666","#2166AC","#B2182B","#00441B","#40004B","#053061"), length.out=length(grpInfo)),
 		txt.cex=0.5,
 		leafColors=NULL,
-		addBoxplots=FALSE){
+		addBoxplots=FALSE,
+		dendroMethod="repeatFamily"){
 
 	require(diagram)
-	repTree <- RepeatTree(repRef, method="repeatFamily")
+	repTree <- RepeatTree(repRef, method=dendroMethod)
 	# repTree <- RepeatTree(repRef, method="hierClust")
-	orderedLabels <- getDendrogramMembers(repTree, rev=FALSE)
-	orderedLabels4plot <- getDendrogramMembers(repTree, rev=TRUE)
+	orderedLabels       <- getDendrogramMembers(repTree, rev=FALSE)
+	orderedLabels4plot  <- getDendrogramMembers(repTree, rev=TRUE)
 	scores.ordered4plot <- scores[orderedLabels4plot,]
 	
 	#setting the coordinates for the elements
@@ -182,7 +187,7 @@ repPlot_groupSummary <- function(
 			cex.valTxt=txt.cex.base,
 			col.valTxt="dark grey"
 		)
-		text(heatResMean$gridMidPoints.x, coord.heat.grp.sum["ymax",i], summaryColNames, srt=45,adj=c(0,0), cex=txt.cex.base, col=groupColors[i])
+		text(heatResMean$gridMidPoints.x, coord.heat.grp.sum["ymax",i], summaryColNames, srt=45, adj=c(0,0), cex=txt.cex.base, col=groupColors[i])
 
 		#plot groupwise boxplots
 		if (addBoxplots){
@@ -252,6 +257,7 @@ filterRepRef_chip <- function(repRef, quantResList, minReads=100){
 #' @param sampleNames		vector of sample names to be used. Must be in the same order as \code{repMethCallFns}
 #' @param sampleGroups 		list of assignments of samples/experiments to groups. Obtained by the \code{\link{getSampleGroups}} function
 #' @param plotDir			Output directory where the plots are saved to
+#' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
 #' @param minReads			filtering parameter: specify the minimum number of reads that must match to a given repeat element in order for the repeat to be added to the plot
 #' @param minCpGs			filtering parameter: specify the minimum number of CpG that must be contained in a given repeat element in order for the repeat to be added to the plot
 #' @return nothing of particular interest
@@ -262,7 +268,7 @@ filterRepRef_chip <- function(repRef, quantResList, minReads=100){
 #'
 #' @author Fabian Mueller
 #' @noRd
-createRepPlot_groupSummaryTrees_meth <- function(repMethCallFns, sampleNames, sampleGroups, plotDir, minReads=100, minCpGs=2){
+createRepPlot_groupSummaryTrees_meth <- function(repMethCallFns, sampleNames, sampleGroups, plotDir, dendroMethod="repeatFamily", minReads=100, minCpGs=2){
 
 						# ft <- getFileTable(am)
 						# ft.inds <- ft[,"mark"]=="DNAmeth" & ft[,"fileType"]=="rds" & ft[,"analysisStep"]=="methCalling"
@@ -325,7 +331,7 @@ createRepPlot_groupSummaryTrees_meth <- function(repMethCallFns, sampleNames, sa
 		fn <- file.path(plotDir, paste0("repeatTree_groupSummary_",ggn,".pdf"))
 		# load_all(file.path(pkg.dir,"epiRepeatR"))
 		pdf(fn, width=20, height=100)
-			repPlot_groupSummary(repRef, methScores, ggs, zlim=c(0,1), leafColors=leafColors, addBoxplots=TRUE)
+			repPlot_groupSummary(repRef, methScores, ggs, zlim=c(0,1), leafColors=leafColors, addBoxplots=TRUE, dendroMethod=dendroMethod)
 		dev.off()
 	}
 	res <- list(
@@ -350,6 +356,7 @@ createRepPlot_groupSummaryTrees_meth <- function(repMethCallFns, sampleNames, sa
 #' @param sampleNames		vector of sample names to be used. Must be in the same order as \code{repMethCallFns}
 #' @param markNames 		vector of names of the mark assayed
 #' @param plotDir			Output directory where the plots are saved to
+#' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
 #' @param minReads			filtering parameter: specify the minimum number of reads that must match to a given repeat element in order for the repeat to be added to the plot
 #' @param minCpGs			filtering parameter: specify the minimum number of CpG that must be contained in a given repeat element in order for the repeat to be added to the plot
 #' @return nothing of particular interest
@@ -360,7 +367,7 @@ createRepPlot_groupSummaryTrees_meth <- function(repMethCallFns, sampleNames, sa
 #'
 #' @author Fabian Mueller
 #' @noRd
-createRepPlot_markTree <- function(quantFns, sampleNames, markNames, plotDir, minReads=100, minCpGs=2){
+createRepPlot_markTree <- function(quantFns, sampleNames, markNames, plotDir, sampleGroups=list(), dendroMethod="repeatFamily", minReads=100, minCpGs=2){
 
 	if (length(quantFns)!=length(sampleNames) || length(quantFns)!=length(markNames)) {
 		stop("incompatible quantFns, sampleNames and markNames parameters")
@@ -424,10 +431,10 @@ createRepPlot_markTree <- function(quantFns, sampleNames, markNames, plotDir, mi
 	leafColors <- colorize.value(covg.score, colscheme=colorpanel(100,"white","black"))
 
 	markLvls <- sort(unique(markNames))
-	ggs <- lapply(markLvls, FUN=function(mn){
+	markGroups <- lapply(markLvls, FUN=function(mn){
 		sampleNames.full[markNames==mn]
 	})
-	names(ggs) <- markLvls
+	names(markGroups) <- markLvls
 
 	colGrads <- rep(list(colorpanel(100,"#8C510A","#F5F5F5","#01665E")), length(markLvls))
 	zlims <- rep(list(c(-3, 3)), length(markLvls)) #chip-seq abs(log2FC) limit to range [-3,3]
@@ -439,16 +446,51 @@ createRepPlot_markTree <- function(quantFns, sampleNames, markNames, plotDir, mi
 
 	fn <- file.path(plotDir, paste0("repeatTree_markSummary",".pdf"))
 	pdf(fn, width=20, height=100)
-		repPlot_groupSummary(repRef, scoreMat, ggs, colorGradient=colGrads, zlim=zlims, leafColors=leafColors, addBoxplots=FALSE)
+		repPlot_groupSummary(repRef, scoreMat, markGroups, colorGradient=colGrads, zlim=zlims, leafColors=leafColors, addBoxplots=FALSE, dendroMethod=dendroMethod)
 	dev.off()
 
+	if (length(sampleGroups) > 0){
+		for (i in 1:length(sampleGroups)){
+			ggn <- names(sampleGroups)[i]
+			ggs <- sampleGroups[[i]]
+			ggs.sn <- lapply(ggs, FUN=function(gg){
+				sampleNames.full[sampleNames %in% gg]
+			})
+			names(ggs.sn) <- names(ggs)
+
+			scoreMat.g <- do.call("cbind", lapply(markLvls, FUN=function(mn){
+				mm <- do.call("cbind", lapply(names(ggs), FUN=function(gn){
+					curSampleNames <- intersect(ggs.sn[[gn]], markGroups[[mn]])
+					rowMeans(scoreMat[, curSampleNames, drop=FALSE])
+				}))
+				colnames(mm) <- paste(names(ggs), mn, sep="_")
+				return(mm)
+			}))
+			ggs.mark <- lapply(markLvls, FUN=function(mn){
+				paste(names(ggs), mn, sep="_")
+			})
+			names(ggs.mark) <- markLvls
+
+			covgMat.sub <- covgMat[,unlist(ggs.sn)]
+			covgMat.sub.rel <-  apply(covgMat.sub, 2, FUN=function(x){x/sum(x)}) # relative coverage
+			covg.score <- rowMeans(covgMat.sub.rel, na.rm=TRUE)
+			#order the color values
+			leafColors <- colorize.value(covg.score, colscheme=colorpanel(100,"white","black"))
+
+			fn <- file.path(plotDir, paste0("repeatTree_markSummary_",ggn,".pdf"))
+			pdf(fn, width=20, height=100)
+				repPlot_groupSummary(repRef, scoreMat.g, ggs.mark, colorGradient=colGrads, zlim=zlims, leafColors=leafColors, addBoxplots=FALSE, dendroMethod=dendroMethod)
+			dev.off()
+		}
+	}
 	res <- list(
 		status="success",
 		callParams=list(
 			quantFns=quantFns,
 			sampleNames=sampleNames,
 			markNames=markNames,
-			plotDir=plotDir,			
+			plotDir=plotDir,
+			sampleGroups=sampleGroups,		
 			minReads=minReads,
 			minCpGs=minCpGs
 		)

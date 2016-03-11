@@ -80,8 +80,9 @@ setMethod("filterRepeats_wl", signature(.Object="RepeatReference"),
 	function(.Object, whitelist){
 		res <- .Object
 		isInWl <- .Object@repeatInfo$id %in% whitelist
-		res@repeatInfo <- res@repeatInfo[isInWl,]
-		res@sequences <- res@sequences[isInWl]
+		res@repeatInfo     <- res@repeatInfo[isInWl,]
+		res@sequences      <- res@sequences[isInWl]
+		res@repeatInfoList <- res@repeatInfoList[isInWl]
 		return(res)
 	}
 )

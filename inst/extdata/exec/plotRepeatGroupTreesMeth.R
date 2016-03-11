@@ -21,7 +21,9 @@ if (length(invalidSamples)>0){
 sampleTab <- sampleTab[sampleNames,,drop=FALSE]
 ggs <- epiRepeatR:::getSampleGroups(sampleTab, addAll=TRUE)
 
+logger.info(c("using dendrogram method:",epiRepeatR:::.config$plotRepTree.dendroMethod))
 epiRepeatR:::createRepPlot_groupSummaryTrees_meth(
 	inFiles, sampleNames, ggs, cmdArgs$output,
+	dendroMethod=epiRepeatR:::.config$plotRepTree.dendroMethod,
 	minReads=epiRepeatR:::.config$plotRepTree.meth.minReads, minCpGs=epiRepeatR:::.config$plotRepTree.meth.minCpGs
 )

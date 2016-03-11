@@ -55,6 +55,22 @@ setMethod("initialize", "RepeatTree",
 		# 	# phyTree$root.edge <- 0 #make the tree rooted
 		# 	clustHier <- as.hclust(phyTree) #doesn't work: tree is not ultrametric, rooted or binary
 		# 	# TODO: implement further...
+		} else if (method=="annotClust"){
+			if (is.null(repRef@repeatInfoList)){
+				logger.info("Adding repeat annotation from EMBL file...")
+				repRef <- addRepeatInfoFromEmbl(repRef)
+			}
+			ril <- repRef@repeatInfoList
+			repTerms <- unique(unlist(lapply(ril, FUN=function(x){x$repeatTerms})))
+			repTermMat <- t(sapply(ril, FUN=function(x){
+				repTerms %in% x$repeatTerms
+			}))
+			colnames(repTermMat) <- repTerms
+			rownames(repTermMat) <- names(ril)
+
+			termDist <- dist(repTermMat, method="manhattan")
+			clustHier <- hclust(termDist, method="single")
+			repTree <- as.dendrogram(clustHier)
 		} else {
 			stop("Unknown method")
 		}

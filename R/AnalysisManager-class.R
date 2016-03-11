@@ -593,7 +593,8 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				rscript,
 				"--in", inFileTable.fn.forPipe,
 				"--out", outDir,
-				"--config", cfgSavePath.forPipe
+				"--config", cfgSavePath.forPipe,
+				"--anaman", anamanSavePath.forPipe
 			)
 
 			pipr <- addStep(pipr, stepName, cmd.plotRepeatMarkTree, args.plotRepeatMarkTree, parents=c("methCalling", "chipQuantification"))
