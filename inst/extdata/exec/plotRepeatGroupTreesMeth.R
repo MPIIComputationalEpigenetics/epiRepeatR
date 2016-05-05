@@ -6,8 +6,14 @@ ap$add_argument("-o", "--out", dest="output", action="store", help="Output Prefi
 ap$add_argument("-c", "--config", action="store", help="Config file (json)")
 ap$add_argument("-a", "--anaman", action="store", help="Analysis manager object (rds)")
 cmdArgs <- ap$parse_args()
+logger.cmd.args(cmdArgs)
 
 loadConfig(cmdArgs$config)
+
+if (is.element("debug", names(epiRepeatR:::.config)) && epiRepeatR:::.config$debug){
+	saveRDS(cmdArgs, file.path(cmdArgs$output, "cmdargs.rds"))
+}
+
 anaMan <- readRDS(cmdArgs$anaman)
 inFileTable <- read.table(cmdArgs$inFileTable, sep="\t", comment.char="", header=TRUE, stringsAsFactors=FALSE)
 inFiles <- inFileTable[,"fileName"]

@@ -62,7 +62,7 @@ Column name | Description
 `fileName` | Location of the file on disc
 `sampleName` | identifier of the sample the file belongs to
 `mark` | epigenetic mark that is being assayed. Can be anything, but has to be consistent for later annotation
-`dataType` | `WGBS` or `RRBS` for bisulfite sequencing. `ChIPseq` for immunoprecipitation signal and `Input` for input/whole cell extract from ChIP-seq experiments
+`dataType` | `WGBS` or `RRBS` for bisulfite sequencing. `ChIPseq` for immunoprecipitation signal and `Input` for input/whole cell extract from ChIP-seq experiments. Can also be `MergedInput` for a common input to normalize ChIP-seq experiments against.
 `analysisStep` | Which analysis step does the file belong to. See table below for possible values.
 
 All other columns (such as `healthStatus` in the example above) are considered annotation that can be used for sample grouping.
@@ -73,6 +73,7 @@ Typically, you will start from sequencing reads in BAM format (aligned or unalig
 --- | ---
 `seqReads` | Sequencing reads in aligned or unaligned BAM file from which applicable reads will be extracted and filtered from.
 `bamExtract` | Sequencing reads in aligned or unaligned BAM file which have already been extracted. No filtering step is conducted.
+`mergeChipInput` | Common input to be used as reference to normalize all ChIP-seq experiments to. Typically created by joining multiple Input BAM files into a common one
 `repeatAlignment` | Sequencing reads already aligned to the reference of repetitive elements as BAM file.
 `methCalling` | `R` dataset file (RDS) of called methylation levels for each repetitive element CpG computed from repeat alignments.
 `chipQuantification` | `R` dataset file (RDS) of quantified ChIP-seq enrichment scoress for each repetitive elemen from repeat alignments.
@@ -87,6 +88,7 @@ You can configure the analysis using config files. They are specified in JSON fo
   "n.processes": 0,
   "samtools.exec": "samtools",
   "inputBam.mappingStatus": "all",
+  "chip.mergeInput": false,
   "aligner.chip": "chip_bwa",
   "alignment.params.chip": "-t 8 -q 20 -b",
   "aligner.bs": "bsmap",

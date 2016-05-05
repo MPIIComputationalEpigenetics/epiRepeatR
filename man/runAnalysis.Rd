@@ -4,7 +4,8 @@
 \alias{runAnalysis}
 \title{runAnalysis}
 \usage{
-runAnalysis(anaDir, fileTable = NULL, cmdr = NULL, resetToStep = NULL)
+runAnalysis(anaDir, fileTable = NULL, resetToStep = NULL,
+  submission = "system", cmdrArgs = list())
 }
 \arguments{
 \item{anaDir}{Analysis directory. epiRepeatR will manage this directory. If it is non-existing a new analysis will be launched
@@ -12,10 +13,12 @@ if it is existing, epiRepeatR will try to resume the analysis}
 
 \item{fileTable}{Table containing file paths of the input files and annotation data. Will be ignored, when resuming an analysis.}
 
-\item{cmdr}{A \code{\linkS4class{CommandR}} object. If NULL (default), the analysis is submitted via system calls}
-
 \item{resetToStep}{If resuming an existing analysis or running from an existing analysis directory, reset the analysis
 to the beginning of the specified analysis step prior to running the pipeline}
+
+\item{submission}{Type of submission to be used. "system" (default) for system calls "sge" for Sun Grid Engine.}
+
+\item{cmdrArgs}{Named list of additional arguments for the construction of the CommandR object used for executing the pipeline.}
 }
 \value{
 nothing of particular interest

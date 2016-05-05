@@ -23,6 +23,9 @@ Set a configuration item to a given value
   \item{\bold{\code{n.processes}}\code{ = 0}}{
        Number of processes used during parallel computations.
   }
+  \item{\bold{\code{rscript.exec}}\code{ = "Rscript"}}{
+       \code{Rscript executable.}
+  }
   \item{\bold{\code{species}}\code{ = "human"}}{
        The organism/taxon the analysis pertains to.
   }
@@ -44,6 +47,9 @@ Set a configuration item to a given value
   \item{\bold{\code{samtools.exec}}\code{ = "samtools"}}{
        Location of the samtools executable.
   }
+  \item{\bold{\code{chip.mergeInput}}\code{ = FALSE}}{
+       Flag indicating whether all bam files containing Input/WCE for ChIP-seq should be merged into one joint Input.
+  }
   \item{\bold{\code{tempDir}}\code{ = tempdir()}}{
         Temporary directory for analysis. Specify to be the empty string ("") to create a temp directory in the analysis directory during runAnalysis.
   }
@@ -57,6 +63,9 @@ Set a configuration item to a given value
   }
   \item{\bold{\code{plotRepTree.meth.minReads}}\code{ = 100}}{
        Minimum number of reads that must match to a given repeat element in order to be shown in the resulting methylation tree plots.
+  }
+  \item{\bold{\code{debug}}\code{ = FALSE}}{
+       \code{Logical specifying whether the debug mode is enabled and additional debug-related output should be provided.}
   }
 }
 }

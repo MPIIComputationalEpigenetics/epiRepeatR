@@ -211,6 +211,22 @@ repPlot_groupSummary <- function(
 	}
 }
 
+#' filterRepRef_meth
+#'
+#' Given a reference of repetitive elements and the results of repeat methylation calling, remove repeats that do not fulfill
+#' the coverage criteria in any sample
+#'
+#' @param repRef	      \code{\linkS4class{RepeatReference}} object
+#' @param methCallResList list of objects as returned by \code{\link{getMethylationCalls,RepeatAlignment-method}}. This list contains one result for each sample.
+#' @param minReads 		  threshold for the minimum number of reads required to cover a repeat
+#' @param minCpGs		  threshold for the minimum number of CpGs that must be contained in a repeat
+#' @return modified repeat reference with repeats removed that do not fulfill the criteria
+#' 
+#' @details
+#' A repeat must fulfill the criteria in all samples in order to be retained
+#'
+#' @author Fabian Mueller
+#' @noRd
 filterRepRef_meth <- function(repRef, methCallResList, minReads=100, minCpGs=2){
 	repRefNames <- getRepeatIds(repRef)
 
@@ -230,6 +246,21 @@ filterRepRef_meth <- function(repRef, methCallResList, minReads=100, minCpGs=2){
 	survive <- apply(survive,1,all)
 	return(filterRepeats_wl(repRef, repRefNames[survive]))
 }
+#' filterRepRef_chip
+#'
+#' Given a reference of repetitive elements and the results of repeat quantification from ChIP-seq, remove repeats that do not fulfill
+#' the coverage criteria in any sample
+#'
+#' @param repRef	      \code{\linkS4class{RepeatReference}} object
+#' @param quantResList    list of objects as returned by \code{\link{computeEnrichment,RepeatAlignment-method}}. This list contains one result for each sample.
+#' @param minReads 		  threshold for the minimum number of reads required to cover a repeat
+#' @return modified repeat reference with repeats removed that do not fulfill the criteria
+#' 
+#' @details
+#' A repeat must fulfill the criteria in all samples in order to be retained
+#'
+#' @author Fabian Mueller
+#' @noRd
 filterRepRef_chip <- function(repRef, quantResList, minReads=100){
 	repRefNames <- getRepeatIds(repRef)
 

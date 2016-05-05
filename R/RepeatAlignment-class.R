@@ -61,7 +61,7 @@ setMethod("getReadCounts", signature(.obj="RepeatAlignment"),
 					countMapped <- sum(mappedReadCounts)
 					countUnmapped <- countUnmappedReads.bam(bamFn)
 					countTotal <- countMapped + countUnmapped
-					res <- c(res, list(.unmapped=countUnmapped, .mapped=countMapped, .total=countTotal))
+					attr(res, "global") <- list(.unmapped=countUnmapped, .mapped=countMapped, .total=countTotal)
 				}
 			} else {
 				#more elaborate version allowing for better filtering
@@ -81,7 +81,7 @@ setMethod("getReadCounts", signature(.obj="RepeatAlignment"),
 					countMapped   <- countBam(bf, param=ScanBamParam(flag=scanBamFlag(isUnmappedQuery=FALSE), what=sbWhat))$records
 					countUnmapped <- countBam(bf, param=ScanBamParam(flag=scanBamFlag(isUnmappedQuery=TRUE),  what=sbWhat))$records
 					countTotal <- countMapped + countUnmapped
-					res <- c(res, list(.unmapped=countUnmapped, .mapped=countMapped, .total=countTotal))
+					attr(res, "global") <- list(.unmapped=countUnmapped, .mapped=countMapped, .total=countTotal)
 				}
 			}
 			# class(res) <- c("RepeatReadCounts")
@@ -215,7 +215,7 @@ if (!isGeneric("computeEnrichment")) setGeneric("computeEnrichment", function(.o
 setMethod("computeEnrichment", signature(.obj="RepeatAlignmentChip", inputObj="RepeatAlignment"),
 	function(.obj, inputObj, ...){
 		eps <- 1e-6
-		if (is.null(inputObj@readCounts)){
+		if (is.null(.obj@readCounts)){
 			logger.status("getting read counts for ChIP")
 			.obj <- storeReadCounts(.obj, ...)
 		}
@@ -229,7 +229,8 @@ setMethod("computeEnrichment", signature(.obj="RepeatAlignmentChip", inputObj="R
 		total.input <- sum(unlist(rc.input))
 		if (!setequal(names(rc.chip), names(rc.input))) stop("Different sequences represented in input and ChIP objects")
 		res <- lapply(names(rc.chip),FUN=function(ss){
-			fc <- (rc.chip[[ss]] * total.input + eps)/(rc.input[[ss]] * total.chip + eps)
+			# fc <- (rc.chip[[ss]] * total.input + eps)/(rc.input[[ss]] * total.chip + eps) #overflow problems
+			fc <- (rc.chip[[ss]]/total.chip) / (rc.input[[ss]]/total.input)
 			if (rc.input[[ss]]==0) fc <- NA
 			rr <- list(
 				fc=fc,
@@ -247,7 +248,9 @@ setMethod("computeEnrichment", signature(.obj="RepeatAlignmentChip", inputObj="R
 	}
 )
 
-#helper functions to display alignment
+################################################################################
+# helper functions to display alignments
+################################################################################
 expandReadSeqFromCigar <- function(readS,readCigar){
 	cigarLen <- as.integer(unlist(strsplit(readCigar,"[MDI]")))
 	cigarInstr <- unlist(strsplit(readCigar,"[[:digit:]]+"))
@@ -324,12 +327,23 @@ getAlnStats <- function(bamFn.aln, bamFn.unaln){
 	ra <- RepeatAlignment(bamFn.aln)
 	rcl.aln <- getReadCounts(ra, useIdxStats=TRUE, addGlobalCounts=TRUE)
 
-	rc.mapped <- rcl.aln[[".mapped"]]
+	rc.mapped <- attr(rcl.aln, "global")[[".mapped"]]
 	rc.total <- countAllReads.bam(bamFn.unaln)
+
+	readStats.aln <- getReadStatsFromSample(bamFn.aln)
+	readStats.unaln <- getReadStatsFromSample(bamFn.unaln)
 	res <- data.frame(
 		totalReads=rc.total,
 		mappedReads=rc.mapped,
-		mappingRate=rc.mapped/rc.total
+		mappingRate=rc.mapped/rc.total,
+		readLengthAlnMin    = as.numeric(readStats.aln$readLength.summary["Min."]),
+		readLengthAlnMax    = as.numeric(readStats.aln$readLength.summary["Max."]),
+		readLengthAlnMedian = as.numeric(readStats.aln$readLength.summary["Median"]),
+		readLengthAllMin    = as.numeric(readStats.unaln$readLength.summary["Min."]),
+		readLengthAllMax    = as.numeric(readStats.unaln$readLength.summary["Max."]),
+		readLengthAllMedian = as.numeric(readStats.unaln$readLength.summary["Median"]),
+		pairedRateAln       = readStats.aln$flagRates["read_paired"],
+		pairedRateAll       = readStats.unaln$flagRates["read_paired"]
 	)
 	return(res)
 }

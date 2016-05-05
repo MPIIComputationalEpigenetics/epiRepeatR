@@ -4,16 +4,17 @@ Description: An R package for anlyzing the epigenetics of repetitive elements
 Authors@R: c(
     person("Fabian", "Mueller", email = "fmueller@mpi-inf.mpg.de",
     role = c("aut", "cre")))
-Date: 2016-02-22
+Date: 2016-04-11
 License: GPL-3
-Version: 0.2
+Version: 0.3
 Depends:
 	muPipeR,
     RnBeads,
     Rsamtools,
     Biostrings,
     jsonlite,
-    igraph
+    igraph,
+    matrixStats
 Imports:
 Suggests:
     argparse
@@ -22,11 +23,14 @@ Collate:
 	'config.R'
 	'dendrogram_extension.R'
 	'diagram_extension.R'
-	'PipelineGraph-class.R'
 	'AnalysisManager-class.R'
 	'RepeatReference-class.R'
 	'RepeatTree-class.R'
 	'RepeatAlignment-class.R'
+	'RepeatEpigenomeCollection-class.R'
+	'GenomeRepeatTrack-class.R'
+	'GenomeAlignment-class.R'
+	'GenomeMethylationCalls-class.R'
 	'preprocessing.R'
 	'alignment.R'
 	'methylationCalling.R'

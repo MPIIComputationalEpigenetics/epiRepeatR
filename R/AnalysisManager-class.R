@@ -27,8 +27,8 @@
 #' }
 #'
 #' @noRd
-#' @name RnBDiffMeth-class
-#' @rdname RnBDiffMeth-class
+#' @name AnalysisManager-class
+#' @rdname AnalysisManager-class
 #' @author Fabian Mueller
 setClass("AnalysisManager",
 	slots = list(
@@ -42,7 +42,7 @@ setClass("AnalysisManager",
 #'
 #' Initialize an AnalysisManager object
 #' 
-#' @param .Object New instance of \code{AnalysisManager}.
+#' @param .Object New instance of class \code{AnalysisManager}.
 #' @param fName Filename of the Analysis configuration table. It should contain columns for filenames of the input files (default: fileName), the data type of the input files (default column name: dataType), a sample identifier (SampleName), an epigenetic mark identifier column (mark) and a column indicating the analysis Step that generated the input file (analysisStep)
 #' @param groupColumns  column names of sample annotation
 #' @param columnMap   mapping of column names to column types (see details on \code{fName} for default column names)
@@ -66,7 +66,7 @@ setMethod("initialize", "AnalysisManager",
 		ft.base <- data.frame(ft[,columnMap[c("fileName","dataType","mark","sampleName","analysisStep")]], stringsAsFactors=FALSE)
 		colnames(ft.base) <- c("fileName","dataType","mark","sampleName","analysisStep")
 
-		ft.base <- data.frame(ft.base, fileType=getFileTypeFromFileName(ft.base$fileName), stringsAsFactors=FALSE)
+		ft.base <- data.frame(ft.base, fileType=getFileTypeFromFileName(ft.base$fileName, ignoreZip=TRUE), stringsAsFactors=FALSE)
 
 		sampleNames <- sort(unique(ft.base[,"sampleName"]))
 		
@@ -241,7 +241,7 @@ addFile <- 	function(fileTable, fileName, dataType, mark, sampleName, analysisSt
 		dataType=dataType,
 		mark=mark,
 		sampleName=sampleName,
-		fileType=getFileTypeFromFileName(fileName),
+		fileType=getFileTypeFromFileName(fileName, ignoreZip=TRUE),
 		analysisStep=analysisStep,
 		stringsAsFactors=FALSE
 	)
@@ -302,7 +302,6 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 		cfgSavePath         <- file.path(cfgDir, "config.json")
 		cfgSavePath.forPipe <- file.path(cfgDir.forPipe, "config.json")
 		saveConfig(cfgSavePath)
-		
 		logger.info(c("Saved config file to",cfgSavePath))
 		anamanSavePath <- file.path(cfgDir, "anaMan.rds")
 		anamanSavePath.forPipe <- file.path(cfgDir.forPipe, "anaMan.rds")
@@ -310,12 +309,21 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 		logger.info(c("Saved analysis manager to",anamanSavePath))
 		fileTabPath <- file.path(cfgDir, "fileTable.tsv")
 
-		tempDir <- getDir(pipr, "temp")
+		#GenomeRepeatTrack location for genome-based quantification
+		processGenomeRepeatTrack <- FALSE
+		isExternalGRT <- !is.null(.config$genomeRepeatTrack) && file.exists(.config$genomeRepeatTrack)
+		repTrackPath <- file.path(cfgDir, "genomeRepeatTrack.rds")
+		repTrackPath.forPipe <- file.path(cfgDir.forPipe, "genomeRepeatTrack.rds")
+		if (isExternalGRT){
+			repTrackPath <- .config$genomeRepeatTrack
+			repTrackPath.forPipe <- .config$genomeRepeatTrack
+		}
+
+		tempDir <- getDir(pipr, "temp")		
 
 		# add analysis steps
 		#-----------------------------------------------------------------------
 		stepName <- "bamExtract"
-		logger.status(c("step:", stepName))
 		cmd.bamExtract <- "bash"
 		bamExtractScript <- system.file(file.path("extdata", "exec", "bamExtract.sh"), package="epiRepeatR")
 		args.bamExtract <- list()
@@ -358,16 +366,67 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 		}
 		if (length(cmd.bamExtract) > 0 && length(args.bamExtract) > 0){
 			pipr <- addStep(pipr, stepName, cmd.bamExtract, args.bamExtract, parents=character())
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
+		}
+		#-----------------------------------------------------------------------
+		doMergeChipInput <- is.element("chip.mergeInput",names(.config)) && .config$chip.mergeInput
+		if (doMergeChipInput){
+			stepName <- "mergeChipInput"
+			cmd.mergeChipInput <- .config$rscript.exec
+			args.mergeChipInput <- list()
+			rscript <- system.file(file.path("extdata", "exec", "mergeChipInput.R"), package="epiRepeatR")
+			inds.input <- ft[, "dataType"]=="Input" & (ft[, "analysisStep"] %in% c("bamExtract", "genomeAlignment"))
+			doMergeChipInput <- any(inds.input)
+			if (doMergeChipInput){
+				anaStepType <- unique(ft[inds.input, "analysisStep"])
+				if (length(anaStepType)>1) {
+					logger.error("Mixed analysisStep types for inputs of mergeChipInput are not allowed")
+				}
+				outFile <- file.path(paste0("${STEPDIR:", stepName, "}"), "mergedChipInput.bam")
+				ft.sub <- ft[inds.input,,drop=FALSE]
+				inputFns <- ft.sub[,"fileName"]
+				inputFns <- muPipeR:::parseJobStrings(pipr, inputFns)
+				inputFileTable <- data.frame(inputFile=inputFns, stringsAsFactors=FALSE)
+
+				inFileTable.fn <- paste0(stepName, "_inputFiles.tsv")
+				inFileTable.fn.forPipe <- file.path(cfgDir.forPipe, inFileTable.fn)
+				inFileTable.fn         <- file.path(cfgDir, inFileTable.fn)
+
+				write.table(inputFileTable, file=inFileTable.fn, quote=FALSE, row.names=FALSE, sep="\t", col.names=FALSE)
+
+				args.mergeChipInput <- c(
+					rscript,
+					"--in", inFileTable.fn.forPipe,
+					"--out", outFile,
+					"--config", cfgSavePath.forPipe
+				)
+
+				fileStepName <- stepName
+				if (anaStepType=="genomeAlignment") fileStepName <- "genomeAlignment"
+				ft <- addFile(ft, outFile, "MergedInput", "Input", NA, fileStepName)
+
+				parentSteps <- character()
+				if (is.element("bamExtract", getSteps(pipr))) parentSteps <- "bamExtract"
+				pipr <- addStep(pipr, stepName, cmd.mergeChipInput, args.mergeChipInput, parents=parentSteps)
+				logger.status(c("Added step:", stepName))
+			} else {
+				logger.status(c("Skipped step:", stepName))
+			}
 		}
 		#-----------------------------------------------------------------------
 		stepName <- "repeatAlignment"
-		logger.status(c("step:", stepName))
 		cmd.repeatAlignment <- "bash"
 		args.repeatAlignment <- list()
 		do.bwaIndex <- FALSE
 		for (sn in sampleNames){
 			for (mn in sampleMarks[[sn]]){
-				for (dn in getSampleMarkDatatypes(.Object, sn, mn)){
+				curDataTypes <- getSampleMarkDatatypes(.Object, sn, mn)
+				if (doMergeChipInput){
+					curDataTypes <- setdiff(curDataTypes, "Input")
+				}
+				for (dn in curDataTypes){
 					stepId <- paste(sn,mn,dn,stepName,sep="_")
 					expInds <- ft[,"sampleName"]==sn & ft[,"mark"]==mn & ft[,"dataType"]==dn
 					stepInds.input <- expInds & ft[,"fileType"]=="bam" & ft[,"analysisStep"]=="bamExtract"
@@ -420,15 +479,56 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				}
 			}
 		}
+		# seperately add merged Input to repeat alignment tasks if required
+		stepInds.input <- ft[,"fileType"]=="bam" & ft[,"analysisStep"]=="mergeChipInput" & ft[,"dataType"]=="MergedInput"
+		doMergeChipInputRepeatAlignment <- any(stepInds.input)
+		doMergeChipInput <- doMergeChipInput | doMergeChipInputRepeatAlignment
+		if (doMergeChipInputRepeatAlignment){
+			stepId <- paste("mergeChipInput", stepName, sep="_")
+			alnType <- .config$aligner.chip
+			curScript <- NULL
+			curExec <- NULL
+			curOtherArgs <- c()
+			if (alnType == "chip_bwa"){
+				curScript <- system.file(file.path("extdata", "exec", "repeatAlignment_bwa_chip.sh"), package="epiRepeatR")
+				curExec <- "bwa"
+				curOtherArgs <- .config$alignment.params.chip
+				do.bwaIndex <- TRUE
+			} else {
+				logger.warning(c("Did not find aligner for step", stepId,"--> skipping alignment step"))
+			}
+			if (sum(stepInds.input)>1){
+				logger.warning(c("Multiple input bam files found for step",stepId,"--> picking the first one"))
+			}
+			inBamFn  <- ft[which(stepInds.input)[1],"fileName"]
+			outBamFn <- file.path(paste0("${STEPDIR:", stepName, "}"), paste0(stepId,".bam"))
+
+			curArgs <- unname(c(
+				curScript,
+				curExec, .config$samtools.exec,
+				inBamFn, outBamFn,
+				.config$refFasta,
+				file.path("${TEMPDIR}", stepId),
+				curOtherArgs
+			))
+
+			args.repeatAlignment <- c(args.repeatAlignment, list(curArgs))
+
+			ft <- addFile(ft, outBamFn, "MergedInput", "Input", NA, stepName)
+		}
 		if (length(cmd.repeatAlignment) > 0 && length(args.repeatAlignment) > 0){
 			# check if the reference has already been indexed for BWA alignment (ChIP) and if not, do it now
 			if (do.bwaIndex) indexRepeatReference.bwa()
-
-			pipr <- addStep(pipr, stepName, cmd.repeatAlignment, args.repeatAlignment, parents="bamExtract")
+			parentSteps <- character()
+			if (is.element("bamExtract", getSteps(pipr))) parentSteps <- c(parentSteps, "bamExtract")
+			if (is.element("mergeChipInput", getSteps(pipr))) parentSteps <- c(parentSteps, "mergeChipInput")
+			pipr <- addStep(pipr, stepName, cmd.repeatAlignment, args.repeatAlignment, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
 		}
 		#-----------------------------------------------------------------------
 		stepName <- "methCalling"
-		logger.status(c("step:", stepName))
 		cmd.methCalling <- .config$rscript.exec
 		args.methCalling <- list()
 		rscript <- system.file(file.path("extdata", "exec", "methCalling.R"), package="epiRepeatR")
@@ -437,14 +537,15 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				for (dn in getSampleMarkDatatypes(.Object, sn, mn)){
 					stepId <- paste(sn,mn,dn,stepName,sep="_")
 					expInds <- ft[,"sampleName"]==sn & ft[,"mark"]==mn & ft[,"dataType"]==dn
-					stepInds.input <- expInds & ft[,"fileType"]=="bam" & (ft[,"analysisStep"] %in% c("repeatAlignment")) & is.element(dn,c("WGBS","RRBS"))
+					stepInds.input <- expInds & (ft[,"fileType"] %in% c("bam", "bed")) & (ft[,"analysisStep"] %in% c("repeatAlignment", "genomeMethCalling")) & is.element(dn,c("WGBS","RRBS"))
 					inputPresent <- any(stepInds.input)
 					doStep <- inputPresent
 					if (doStep){
 						if (sum(stepInds.input)>1){
-							logger.warning(c("Multiple input bam files found for step",stepId,"--> picking the first one"))
+							logger.warning(c("Multiple input bam/bed files found for step",stepId,"--> picking the first one"))
 						}
 						inBamFn  <- ft[which(stepInds.input)[1],"fileName"]
+						isGenomeData <- ft[which(stepInds.input)[1],"analysisStep"]=="genomeMethCalling"
 						outFn <- file.path(paste0("${STEPDIR:", stepName, "}"), paste0(stepId,".rds"))
 
 						curArgs <- unname(c(
@@ -453,6 +554,10 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 							"--out", outFn,
 							"--config", cfgSavePath.forPipe
 						))
+						if (isGenomeData){
+							curArgs <- c(curArgs, c("--grt", repTrackPath.forPipe))
+							processGenomeRepeatTrack <- TRUE
+						}
 						args.methCalling <- c(args.methCalling, list(curArgs))
 
 						ft <- addFile(ft, outFn, dn, mn, sn, stepName)
@@ -460,24 +565,89 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				}
 			}
 		}
-		if (length(cmd.methCalling) > 0 && length(args.methCalling) > 0){		
-			pipr <- addStep(pipr, stepName, cmd.methCalling, args.methCalling, parents="repeatAlignment")
+		if (length(cmd.methCalling) > 0 && length(args.methCalling) > 0){
+			parentSteps <- character()
+			if (is.element("repeatAlignment", getSteps(pipr))) parentSteps <- "repeatAlignment"
+			pipr <- addStep(pipr, stepName, cmd.methCalling, args.methCalling, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
+		}
+		#-----------------------------------------------------------------------
+		stepName <- "repeatReadCountsFromGenomeAlignment"
+		cmd.rrcfga <- .config$rscript.exec
+		args.rrcfga <- list()
+		rscript <- system.file(file.path("extdata", "exec", "repeatReadCountsFromGenomeAlignment.R"), package="epiRepeatR")
+		validDataTypes <- c("ChIPseq")
+		if (doMergeChipInput){
+			validDataTypes <- c(validDataTypes, "MergedInput")
+		} else {
+			validDataTypes <- c(validDataTypes, "Input")
+		}
+		
+		stepInds <- ft[,"fileType"]=="bam" & ft[,"analysisStep"]=="genomeAlignment" & (ft[,"dataType"] %in% validDataTypes)
+		doStep <- any(stepInds)
+		if (doStep){
+			processGenomeRepeatTrack <- TRUE
+			ft.sub <- ft[stepInds,,drop=FALSE]
+			ft.sub.cols <- ft.sub[,c("sampleName", "mark", "dataType")]
+			stepIds <- apply(ft.sub.cols, 1, FUN=function(x){
+				paste(paste(x, collapse="_"),stepName,sep="_")
+			})
+			if (any(duplicated(ft.sub.cols))){
+				dd <- duplicated(ft.sub.cols)
+				logger.warning(c("Multiple input files found for steps:", paste(unique(stepIds[dd]),collapse=","), "--> just proceeding with the first one(s)"))
+				stepIds <- stepIds[!dd]
+				ft.sub  <- ft.sub[!dd,drop=FALSE]
+			}
+			for (i in 1:nrow(ft.sub)){
+				outFn <- file.path(paste0("${STEPDIR:", stepName, "}"), paste0(stepIds[i], ".rds"))
+				curArgs <- unname(c(
+					rscript,
+					"--in", ft.sub[i,"fileName"],
+					"--out", outFn,
+					"--config", cfgSavePath.forPipe,
+					"--grt", repTrackPath.forPipe
+				))
+				args.rrcfga <- c(args.rrcfga, list(curArgs))
+				ft <- addFile(ft, outFn, ft.sub[i,"dataType"], ft.sub[i,"mark"], ft.sub[i,"sampleName"], stepName)
+			}
+		}
+		if (length(cmd.rrcfga) > 0 && length(args.rrcfga) > 0){
+			parentSteps <- character()
+			if (is.element("mergeChipInput", getSteps(pipr))) parentSteps <- c(parentSteps, "mergeChipInput")
+			pipr <- addStep(pipr, stepName, cmd.rrcfga, args.rrcfga, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
 		}
 		#-----------------------------------------------------------------------
 		stepName <- "chipQuantification"
-		logger.status(c("step:", stepName))
 		cmd.chipQuantification <- .config$rscript.exec
 		args.chipQuantification <- list()
 		rscript <- system.file(file.path("extdata", "exec", "chipQuantification.R"), package="epiRepeatR")
 		for (sn in sampleNames){
 			marks4sample <- sort(unique(ft[ft[, "sampleName"]==sn & ft[, "dataType"]=="ChIPseq", "mark"]))
-			inds.input <- ft[,"sampleName"]==sn & ft[, "dataType"]=="Input" & (ft[, "analysisStep"] %in% c("repeatAlignment"))
+			if (doMergeChipInput){
+				inds.input <- ft[, "dataType"]=="MergedInput" & (ft[, "analysisStep"] %in% c("repeatAlignment", "repeatReadCountsFromGenomeAlignment"))
+			} else {
+				inds.input <- ft[,"sampleName"]==sn & ft[, "dataType"]=="Input" & (ft[, "analysisStep"] %in% c("repeatAlignment", "repeatReadCountsFromGenomeAlignment"))
+			}
 			bamInput <- ft[which(inds.input)[1], "fileName"]
-			chipBams <- sapply(marks4sample ,FUN=function(mm){
-				idx <- ft[,"sampleName"]==sn & ft[,"dataType"]=="ChIPseq" & ft[,"mark"]==mm & (ft[,"analysisStep"] %in% c("repeatAlignment"))
-				return(ft[which(idx)[1],"fileName"])
-			})
+			isGenomeData <- ft[which(inds.input)[1], "analysisStep"]=="repeatReadCountsFromGenomeAlignment"
+			if (isGenomeData){
+				chipBams <- sapply(marks4sample ,FUN=function(mm){
+					idx <- ft[,"sampleName"]==sn & ft[,"dataType"]=="ChIPseq" & ft[,"mark"]==mm & (ft[,"analysisStep"] %in% c("repeatReadCountsFromGenomeAlignment"))
+					return(ft[which(idx)[1],"fileName"])
+				})
+			} else {
+				chipBams <- sapply(marks4sample ,FUN=function(mm){
+					idx <- ft[,"sampleName"]==sn & ft[,"dataType"]=="ChIPseq" & ft[,"mark"]==mm & (ft[,"analysisStep"] %in% c("repeatAlignment"))
+					return(ft[which(idx)[1],"fileName"])
+				})
+			}
 			names(chipBams) <- marks4sample
+
 			doStep <- any(inds.input) && length(chipBams) > 0
 			if (doStep){
 				for (mn in marks4sample){
@@ -490,21 +660,32 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 						"--out", outFn,
 						"--config", cfgSavePath.forPipe
 					))
+					if (isGenomeData){
+						curArgs <- c(curArgs, c("--genome"))
+					}
 					args.chipQuantification <- c(args.chipQuantification, list(curArgs))
 					ft <- addFile(ft, outFn, "ChIPseq", mn, sn, stepName)
 				}
 			}
 		}
 		if (length(cmd.chipQuantification) > 0 && length(args.chipQuantification) > 0){
-			pipr <- addStep(pipr, stepName, cmd.chipQuantification, args.chipQuantification, parents="repeatAlignment")
+			parentSteps <- character()
+			if (is.element("repeatAlignment", getSteps(pipr))) parentSteps <- "repeatAlignment"
+			if (is.element("repeatReadCountsFromGenomeAlignment", getSteps(pipr))) parentSteps <- "repeatReadCountsFromGenomeAlignment"
+			pipr <- addStep(pipr, stepName, cmd.chipQuantification, args.chipQuantification, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
 		}
 		#-----------------------------------------------------------------------
 		stepName <- "repeatAlignmentStats"
-		logger.status(c("step:", stepName))
 		cmd.repeatAlignmentStats <- .config$rscript.exec
 		rscript <- system.file(file.path("extdata", "exec", "repeatAlignmentStats.R"), package="epiRepeatR")
 		inputPresent <- (ft[,"analysisStep"] %in% c("bamExtract", "repeatAlignment")) & ft[,"fileType"]=="bam"
-		doStep <- any(inputPresent)
+		parentSteps <- character()
+		if (is.element("bamExtract", getSteps(pipr))) parentSteps <- c(parentSteps, "bamExtract")
+		if (is.element("repeatAlignment", getSteps(pipr))) parentSteps <- c(parentSteps, "repeatAlignment")
+		doStep <- any(inputPresent) && length(parentSteps) > 0
 		if (doStep){
 			outDir <- file.path(paste0("${STEPDIR:", stepName, "}"))
 			ft.sub <- ft[inputPresent,]
@@ -530,11 +711,13 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				"--config", cfgSavePath.forPipe
 			)
 
-			pipr <- addStep(pipr, stepName, cmd.repeatAlignmentStats, args.repeatAlignmentStats, parents=c("bamExtract", "repeatAlignment"))
+			pipr <- addStep(pipr, stepName, cmd.repeatAlignmentStats, args.repeatAlignmentStats, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
 		}
 		#-----------------------------------------------------------------------
 		stepName <- "plotRepeatGroupTreesMeth"
-		logger.status(c("step:", stepName))
 		cmd.plotRepeatGroupTreesMeth <- .config$rscript.exec
 		rscript <- system.file(file.path("extdata", "exec", "plotRepeatGroupTreesMeth.R"), package="epiRepeatR")
 		inputPresent <- (ft[,"mark"] %in% c("DNAmeth")) & (ft[,"analysisStep"] %in% c("methCalling")) & ft[,"fileType"]=="rds"
@@ -562,11 +745,15 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				"--anaman", anamanSavePath.forPipe
 			)
 
-			pipr <- addStep(pipr, stepName, cmd.plotRepeatGroupTreesMeth, args.plotRepeatGroupTreesMeth, parents="methCalling")
+			parentSteps <- character()
+			if (is.element("methCalling", getSteps(pipr))) parentSteps <- "methCalling"
+			pipr <- addStep(pipr, stepName, cmd.plotRepeatGroupTreesMeth, args.plotRepeatGroupTreesMeth, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
 		}
 		#-----------------------------------------------------------------------
 		stepName <- "plotRepeatMarkTree"
-		logger.status(c("step:", stepName))
 		cmd.plotRepeatMarkTree <- .config$rscript.exec
 		rscript <- system.file(file.path("extdata", "exec", "plotRepeatMarkTree.R"), package="epiRepeatR")
 		inputPresent <- (ft[,"analysisStep"] %in% c("methCalling", "chipQuantification")) & ft[,"fileType"]=="rds"
@@ -597,11 +784,27 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				"--anaman", anamanSavePath.forPipe
 			)
 
-			pipr <- addStep(pipr, stepName, cmd.plotRepeatMarkTree, args.plotRepeatMarkTree, parents=c("methCalling", "chipQuantification"))
+			parentSteps <- character()
+			if (is.element("methCalling", getSteps(pipr))) parentSteps <- c(parentSteps, "methCalling")
+			if (is.element("chipQuantification", getSteps(pipr))) parentSteps <- c(parentSteps, "chipQuantification")
+			pipr <- addStep(pipr, stepName, cmd.plotRepeatMarkTree, args.plotRepeatMarkTree, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
 		}
 
 		write.table(ft, file=fileTabPath, quote=FALSE, row.names=FALSE, sep="\t", col.names=TRUE)
 		logger.info(c("Saved file table to", fileTabPath))
+
+		if (processGenomeRepeatTrack){
+			if (!isExternalGRT){
+				validGenomeConfig <- !is.null(.config$assembly) && is.character(.config$assembly)
+				if (!validGenomeConfig) logger.error("Invalid genome configuration for processing genome-based data. Make sure to specify a valid assembly.")
+				grt <- GenomeRepeatTrack(.config$assembly)
+				saveRDS(grt, repTrackPath)
+				logger.info(c("Saved GenomeRepeatTrack object to", repTrackPath))
+			}
+		}
 		
 		return(pipr)
 	}

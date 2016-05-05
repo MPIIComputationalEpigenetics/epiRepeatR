@@ -7,10 +7,15 @@ REFFILE=$5
 TEMPPREFIX=$6
 BWAARGS="${@:7}"
 
+echo "Step: aln"
 ${BWA} aln ${BWAARGS} ${REFFILE} ${INFILE} > ${TEMPPREFIX}_tmp01.sai
+echo "Step: samse"
 ${BWA} samse ${REFFILE} ${TEMPPREFIX}_tmp01.sai ${INFILE} > ${TEMPPREFIX}_tmp02.sam
+echo "Step: Converting to bam"
 ${SAMTOOLS} view -b -T ${REFFILE} -o ${TEMPPREFIX}_tmp03_unsorted.bam ${TEMPPREFIX}_tmp02.sam
-${SAMTOOLS} sort -o ${OUTFILE} ${TEMPPREFIX}_tmp03_unsorted.bam
+echo "Step: Sorting bam"
+${SAMTOOLS} sort -m 4G -o ${OUTFILE} ${TEMPPREFIX}_tmp03_unsorted.bam
+echo "Step: Indexing bam"
 ${SAMTOOLS} index ${OUTFILE}
 
 # rm ${TEMPPREFIX}_tmp01.sai

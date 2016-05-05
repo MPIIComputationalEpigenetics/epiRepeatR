@@ -3,6 +3,8 @@
 export(getArgParser)
 export(loadConfig)
 export(loadConfigFromCommandLine)
+export(logger.cmd.args)
+export(plotRepeatAlignmentStats)
 export(runAnalysis)
 export(saveConfig)
 export(setConfigElement)

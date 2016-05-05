@@ -6,10 +6,14 @@ ap$add_argument("-o", "--out", action="store", dest="output", help="Output direc
 ap$add_argument("-c", "--config", action="store", help="Config file (json)")
 ap$add_argument("-a", "--anaman", action="store", help="Analysis manager object (rds)")
 cmdArgs <- ap$parse_args() #problem: too long of a command line
-
-# saveRDS(cmdArgs, file.path(cmdArgs$output, "cmdargs.rds"))
+logger.cmd.args(cmdArgs)
 
 loadConfig(cmdArgs$config)
+
+if (is.element("debug", names(epiRepeatR:::.config)) && epiRepeatR:::.config$debug){
+	saveRDS(cmdArgs, file.path(cmdArgs$output, "cmdargs.rds"))
+}
+
 anaMan <- readRDS(cmdArgs$anaman)
 inFileTable <- read.table(cmdArgs$inFileTable, sep="\t", comment.char="", header=TRUE, stringsAsFactors=FALSE)
 inFiles <- inFileTable[,"fileName"]
@@ -21,7 +25,7 @@ invalidSamples <- setdiff(sampleNames,rownames(sampleTab))
 if (length(invalidSamples)>0){
 	logger.error(c("The following samples do not exist in the annotation table:",paste(invalidSamples,collapse=",")))
 }
-sampleTab <- sampleTab[sampleNames,,drop=FALSE]
+# sampleTab <- sampleTab[sampleNames,,drop=FALSE]
 ggs <- epiRepeatR:::getSampleGroups(sampleTab, addAll=TRUE)
 
 epiRepeatR:::createRepPlot_markTree(

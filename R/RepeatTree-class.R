@@ -1,6 +1,25 @@
 setOldClass(c("dendrogram"), prototype=structure(list(), class="dendrogram"))
 setClassUnion("ListOrNULL", c("list", "NULL"))
 
+#' RepeatTree Class
+#'
+#' A class for managing a collection of reference repeats in a dendrogram structure
+#'
+#' @section Slots:
+#' \describe{
+#'   \item{\code{tree}}{the dendrogram organizing the reference repeats}
+#'   \item{\code{repeatRef}}{Reference repeats as Object of type \code{\linkS4class{RepeatReference}}} 
+#' }
+#'
+#' @section Methods:
+#' \describe{
+#'   \item{\code{\link{getDendrogram,RepeatTree-method}}}{retrieve the repeat dendrogram}
+#' }
+#'
+#' @noRd
+#' @name RepeatTree-class
+#' @rdname RepeatTree-class
+#' @author Fabian Mueller
 setClass("RepeatTree",
 	slots = list(
 		tree="dendrogram",
@@ -8,7 +27,6 @@ setClass("RepeatTree",
 	),
 	package = "epiRepeatR"
 )
-
 setMethod("initialize", "RepeatTree",
 	function(.Object,
 		repRef,
@@ -79,7 +97,15 @@ setMethod("initialize", "RepeatTree",
 		.Object
 	}
 )
-
+#' @param repRef    Object of type \code{\linkS4class{RepeatReference}}
+#' @param method    Method for constructing the dendrogram. Valid methods include 
+#'                  grouping by repeat subfamily ("repeatFamily"),
+#'                  grouping by hierarchical clustering based on k-mer counts in the repeat sequence (Euclidean distance, complete linkage) ("hierClust"),
+#'                  grouping by hierarchical clustering based on occurrences of terms in the annotation fields of a repeat ("annotClust"; requires that the repeat references has been annotated from the EMBL format.)
+#' @name RepeatTree
+#' @rdname RepeatTree-class
+#' @aliases intialize,RepeatTree-method
+#' @noRd
 RepeatTree <- function(repRef,method="repeatFamily"){
 	obj <- new("RepeatTree",
 		repRef,
@@ -89,6 +115,19 @@ RepeatTree <- function(repRef,method="repeatFamily"){
 }
 
 if (!isGeneric("getDendrogram")) setGeneric("getDendrogram", function(.Object) standardGeneric("getDendrogram"))
+#' getDendrogram-methods
+#'
+#' Return the dendrogram of the object
+#'
+#' @param .Object \code{\linkS4class{RepeatTree}} object
+#' @return Dendrogram object containing reference repeats
+#'
+#' @rdname getDendrogram-RepeatTree-method
+#' @docType methods
+#' @aliases getDendrogram
+#' @aliases getDendrogram,RepeatTree-method
+#' @author Fabian Mueller
+#' @noRd
 setMethod("getDendrogram", signature(.Object="RepeatTree"),
 	function(.Object){
 		return(.Object@tree)
@@ -96,6 +135,20 @@ setMethod("getDendrogram", signature(.Object="RepeatTree"),
 )
 
 if (!isGeneric("getDendrogramMembers")) setGeneric("getDendrogramMembers", function(.Object, ...) standardGeneric("getDendrogramMembers"))
+#' getDendrogramMembers-methods
+#'
+#' Return the repeat members stored in the dendrogram
+#'
+#' @param .Object \code{\linkS4class{RepeatTree}} object
+#' @param rev     should the names be returned in reverse order
+#' @return character vector of reference repeat identifiers
+#'
+#' @rdname getDendrogramMembers-RepeatTree-method
+#' @docType methods
+#' @aliases getDendrogramMembers
+#' @aliases getDendrogramMembers,RepeatTree-method
+#' @author Fabian Mueller
+#' @noRd
 setMethod("getDendrogramMembers", signature(.Object="RepeatTree"),
 	function(.Object, rev=FALSE){
 		res <- getMemberAttr(.Object@tree, "label")
@@ -103,7 +156,23 @@ setMethod("getDendrogramMembers", signature(.Object="RepeatTree"),
 		return(res)
 	}
 )
+
 if (!isGeneric("setDendrogramMemberAttr")) setGeneric("setDendrogramMemberAttr", function(.Object, ...) standardGeneric("setDendrogramMemberAttr"))
+#' setDendrogramMemberAttr-methods
+#'
+#' Sets attributes for the members/leafs of the dendrogram
+#'
+#' @param .Object  \code{\linkS4class{RepeatTree}} object
+#' @param attrName name of the attribute to be set
+#' @param attrVals values of the attribute to be set for each member
+#' @return the modified object with the modified dendrogram containing the modified attributes
+#'
+#' @rdname setDendrogramMemberAttr-RepeatTree-method
+#' @docType methods
+#' @aliases setDendrogramMemberAttr
+#' @aliases setDendrogramMemberAttr,RepeatTree-method
+#' @author Fabian Mueller
+#' @noRd
 setMethod("setDendrogramMemberAttr", signature(.Object="RepeatTree"),
 	function(.Object, attrName, attrVals){
 		.Object@tree <- setMemberAttr(.Object@tree, attrName, attrVals)
@@ -111,12 +180,29 @@ setMethod("setDendrogramMemberAttr", signature(.Object="RepeatTree"),
 	}
 )
 
+# Helper function determining if the dendrogram is a leaf 
 isLeaf <- function(dend){
 	if (!is.null(attr(dend,"leaf"))) return(attr(dend,"leaf"))
 	return(FALSE)
 }
 
-#recursively plot the tree
+#' plotDend.rec
+#'
+#' Plots a a dendrogram in the specified set of coordinates. Recursive function!
+#'
+#' @param dend      dendrogram object
+#' @param xmin      lower x position where the dendrogram should be plotted
+#' @param xmax      upper x position where the dendrogram should be plotted
+#' @param ymin      lower y position where the dendrogram should be plotted
+#' @param ymax      upper y position where the dendrogram should be plotted
+#' @param depth     the current depths in the dendrogram. Important for recursion
+#' @param yroot     the y coordinate of the root of the dendrogram
+#' @param rev       should the order of the members of the dendrogram be reversed in plotting (top to bottom instead of bottom to top drawing)
+#' @param cex       text size of the labels
+#' @return nothing of particular interest
+#'
+#' @author Fabian Mueller
+#' @noRd
 plotDend.rec <- function(dend, xmin=0, xmax=1, ymin=0, ymax=1, depth=0, yroot=NULL, rev=TRUE, cex=0.5){
 	if (isLeaf(dend)){
 		pbgcol <- attr(dend,"leafBgColor")
@@ -196,6 +282,24 @@ plotDend.rec <- function(dend, xmin=0, xmax=1, ymin=0, ymax=1, depth=0, yroot=NU
 }
 
 if (!isGeneric("addToPlot")) setGeneric("addToPlot", function(.Object, ...) standardGeneric("addToPlot"))
+#' addToPlot-methods
+#'
+#' Add a repeat tree dendrogram to a plot
+#'
+#' @param .Object   \code{\linkS4class{RepeatTree}} object
+#' @param xmin      lower x position where the dendrogram should be plotted
+#' @param xmax      upper x position where the dendrogram should be plotted
+#' @param ymin      lower y position where the dendrogram should be plotted
+#' @param ymax      upper y position where the dendrogram should be plotted
+#' @param rev       should the order of the members of the dendrogram be reversed in plotting (top to bottom instead of bottom to top drawing)
+#' @return nothing of particular interest
+#'
+#' @rdname addToPlot-RepeatTree-method
+#' @docType methods
+#' @aliases addToPlot
+#' @aliases addToPlot,RepeatTree-method
+#' @author Fabian Mueller
+#' @noRd
 setMethod("addToPlot", signature(.Object="RepeatTree"),
 	function(.Object, xmin=0, xmax=1, ymin=0, ymax=1, rev=TRUE){
 		require(diagram)

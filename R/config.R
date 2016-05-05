@@ -2,6 +2,7 @@
 .config$n.processes <- 0
 .config$rscript.exec <- "Rscript"
 .config$species <-  "human"
+.config$assembly <-  NULL
 # .config$refFasta <- "/TL/deep-external01/archive00/references/assemblies/RepBase19.07/human.fasta/humrep.fa"
 .config$refFasta <- "/TL/deep-external01/archive00/references/assemblies/RepBase20.04/Homo_sapiens_all.fa"
 .config$refEmbl  <- NULL 
@@ -10,11 +11,14 @@
 .config$aligner.chip <- "chip_bwa" # ChIP-seq aligner
 .config$alignment.params.chip <- "-t 8 -q 20 -b" # to be appended to ChIP-seq aligner call
 .config$samtools.exec <- "samtools" # location of the samtools executable
+.config$chip.mergeInput <- FALSE
 .config$tempDir <- tempdir()
 .config$inputBam.mappingStatus <- "all"
 .config$plotRepTree.dendroMethod <- "repeatFamily"
 .config$plotRepTree.meth.minCpGs  <- 2
 .config$plotRepTree.meth.minReads <- 100
+.config$genomeRepeatTrack <- NULL
+.config$debug <- FALSE
 #assignInNamespace(".config", .config, "epiRepeatR") # to manually assign in non-exported variables
 
 #' setConfigElement
@@ -53,6 +57,9 @@
 #'   \item{\bold{\code{samtools.exec}}\code{ = "samtools"}}{
 #'        Location of the samtools executable.
 #'   }
+#'   \item{\bold{\code{chip.mergeInput}}\code{ = FALSE}}{
+#'        Flag indicating whether all bam files containing Input/WCE for ChIP-seq should be merged into one joint Input.
+#'   }
 #'   \item{\bold{\code{tempDir}}\code{ = tempdir()}}{
 #'         Temporary directory for analysis. Specify to be the empty string ("") to create a temp directory in the analysis directory during runAnalysis.
 #'   }
@@ -66,6 +73,9 @@
 #'   }
 #'   \item{\bold{\code{plotRepTree.meth.minReads}}\code{ = 100}}{
 #'        Minimum number of reads that must match to a given repeat element in order to be shown in the resulting methylation tree plots.
+#'   }
+#'   \item{\bold{\code{debug}}\code{ = FALSE}}{
+#'        \code{Logical specifying whether the debug mode is enabled and additional debug-related output should be provided.}
 #'   }
 #' }
 #' @author Fabian Mueller
