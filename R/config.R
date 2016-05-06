@@ -9,7 +9,8 @@
 .config$aligner.bs <- "bsmap"
 .config$alignment.params.bs <- "-g 3 -v 0.2"
 .config$aligner.chip <- "chip_bwa" # ChIP-seq aligner
-.config$alignment.params.chip <- "-t 8 -q 20 -b" # to be appended to ChIP-seq aligner call
+.config$alignment.params.chip.bwa <- "-t 8 -q 20 -b" # to be appended to BWA ChIP-seq aligner call
+.config$alignment.params.chip.bowtie2 <- "--local --sensitive-local -p 8" # to be appended to BWA ChIP-seq aligner call
 .config$samtools.exec <- "samtools" # location of the samtools executable
 .config$chip.mergeInput <- FALSE
 .config$tempDir <- tempdir()
@@ -51,8 +52,8 @@
 #'   \item{\bold{\code{aligner.chip}}\code{ = "bwa_chip"}}{
 #'        Aligner used for mapping ChIP-seq reads to the repeat reference. Currently only "chip_bwa" is supported.
 #'   }
-#'   \item{\bold{\code{alignment.params.chip}}\code{ = "-t 8 -q 20 -b"}}{
-#'        Additional parameters appended during the command line call to the ChIP-seq aligner.
+#'   \item{\bold{\code{alignment.params.chip.bwa}}\code{ = "-t 8 -q 20 -b"}}{
+#'        Additional parameters appended during the command line call to the BWA ChIP-seq aligner.
 #'   }
 #'   \item{\bold{\code{samtools.exec}}\code{ = "samtools"}}{
 #'        Location of the samtools executable.

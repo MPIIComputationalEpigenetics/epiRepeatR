@@ -447,7 +447,11 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 					} else if (alnType == "chip_bwa"){
 						curScript <- system.file(file.path("extdata", "exec", "repeatAlignment_bwa_chip.sh"), package="epiRepeatR")
 						curExec <- "bwa"
-						curOtherArgs <- .config$alignment.params.chip
+						curOtherArgs <- .config$alignment.params.chip.bwa
+					} else if (alnType == "chip_bowtie2") {
+						curScript <- system.file(file.path("extdata", "exec", "repeatAlignment_bowtie2_chip.sh"), package="epiRepeatR")
+						curExec <- "bowtie2"
+						curOtherArgs <- .config$alignment.params.chip.bowtie2
 					} else {
 						logger.warning(c("Did not find aligner for step", stepId,"--> skipping alignment step"))
 					}
@@ -455,6 +459,9 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 					if (doStep){
 						if (alnType == "chip_bwa"){
 							do.bwaIndex <- TRUE
+						}
+						if (alnType == "chip_bowtie2"){
+							do.bowtie2Index <- TRUE
 						}
 						if (sum(stepInds.input)>1){
 							logger.warning(c("Multiple input bam files found for step",stepId,"--> picking the first one"))
@@ -492,8 +499,13 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 			if (alnType == "chip_bwa"){
 				curScript <- system.file(file.path("extdata", "exec", "repeatAlignment_bwa_chip.sh"), package="epiRepeatR")
 				curExec <- "bwa"
-				curOtherArgs <- .config$alignment.params.chip
+				curOtherArgs <- .config$alignment.params.chip.bwa
 				do.bwaIndex <- TRUE
+			} else if (alnType == "chip_bowtie2") {
+				curScript <- system.file(file.path("extdata", "exec", "repeatAlignment_bowtie2_chip.sh"), package="epiRepeatR")
+				curExec <- "bowtie2"
+				curOtherArgs <- .config$alignment.params.chip.bowtie2
+				do.bowtie2Index <- TRUE
 			} else {
 				logger.warning(c("Did not find aligner for step", stepId,"--> skipping alignment step"))
 			}
@@ -519,6 +531,7 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 		if (length(cmd.repeatAlignment) > 0 && length(args.repeatAlignment) > 0){
 			# check if the reference has already been indexed for BWA alignment (ChIP) and if not, do it now
 			if (do.bwaIndex) indexRepeatReference.bwa()
+			if (do.bowtie2Index) indexRepeatReference.bowtie2()
 			parentSteps <- character()
 			if (is.element("bamExtract", getSteps(pipr))) parentSteps <- c(parentSteps, "bamExtract")
 			if (is.element("mergeChipInput", getSteps(pipr))) parentSteps <- c(parentSteps, "mergeChipInput")
