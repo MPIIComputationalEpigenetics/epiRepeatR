@@ -420,6 +420,7 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 		cmd.repeatAlignment <- "bash"
 		args.repeatAlignment <- list()
 		do.bwaIndex <- FALSE
+		do.bowtie2Index <- FALSE
 		for (sn in sampleNames){
 			for (mn in sampleMarks[[sn]]){
 				curDataTypes <- getSampleMarkDatatypes(.Object, sn, mn)
@@ -730,50 +731,13 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 			logger.status(c("Skipped step:", stepName))
 		}
 		#-----------------------------------------------------------------------
-		stepName <- "plotRepeatGroupTreesMeth"
-		cmd.plotRepeatGroupTreesMeth <- .config$rscript.exec
-		rscript <- system.file(file.path("extdata", "exec", "plotRepeatGroupTreesMeth.R"), package="epiRepeatR")
-		inputPresent <- (ft[,"mark"] %in% c("DNAmeth")) & (ft[,"analysisStep"] %in% c("methCalling")) & ft[,"fileType"]=="rds"
+		stepName <- "repeatEpigenomeCollection"
+		cmd.repeatEpigenomeCollection <- .config$rscript.exec
+		rscript <- system.file(file.path("extdata", "exec", "repeatEpigenomeCollection.R"), package="epiRepeatR")
+		inputPresent <- (ft[,"analysisStep"] %in% c("methCalling", "chipQuantification")) & ft[,"fileType"]=="rds"
 		doStep <- any(inputPresent)
 		if (doStep){
-			outDir <- file.path(paste0("${STEPDIR:", stepName, "}"))
-			sampleNames <- ft[inputPresent, "sampleName"]
-			if (any(duplicated(sampleNames))){
-				logger.error("Multiple methylation call files found for a number of samples")
-			}
-			inFns <- ft[inputPresent,"fileName"]
-			inFns.full <- muPipeR:::parseJobStrings(pipr, inFns)
-			# TODO: avoid full file names in input file table
-			inFileTable <- data.frame(fileName=inFns.full, sampleName=sampleNames, stringsAsFactors=FALSE)
-			inFileTable.fn <- paste0(stepName, "_inputFiles.tsv")
-			inFileTable.fn.forPipe <- file.path(cfgDir.forPipe, inFileTable.fn)
-			inFileTable.fn         <- file.path(cfgDir, inFileTable.fn)
-			write.table(inFileTable, file=inFileTable.fn, quote=FALSE, row.names=FALSE, sep="\t", col.names=TRUE)
-
-			args.plotRepeatGroupTreesMeth <- c(
-				rscript,
-				"--in", inFileTable.fn.forPipe,
-				"--out", outDir,
-				"--config", cfgSavePath.forPipe,
-				"--anaman", anamanSavePath.forPipe
-			)
-
-			parentSteps <- character()
-			if (is.element("methCalling", getSteps(pipr))) parentSteps <- "methCalling"
-			pipr <- addStep(pipr, stepName, cmd.plotRepeatGroupTreesMeth, args.plotRepeatGroupTreesMeth, parents=parentSteps)
-			logger.status(c("Added step:", stepName))
-		} else {
-			logger.status(c("Skipped step:", stepName))
-		}
-		#-----------------------------------------------------------------------
-		stepName <- "plotRepeatMarkTree"
-		cmd.plotRepeatMarkTree <- .config$rscript.exec
-		rscript <- system.file(file.path("extdata", "exec", "plotRepeatMarkTree.R"), package="epiRepeatR")
-		inputPresent <- (ft[,"analysisStep"] %in% c("methCalling", "chipQuantification")) & ft[,"fileType"]=="rds"
-		# carry out the step if there are chipQuantifications
-		doStep <- any(inputPresent) && any(ft[inputPresent,"analysisStep"]=="chipQuantification")
-		if (doStep){
-			outDir <- file.path(paste0("${STEPDIR:", stepName, "}"))
+			outFn <- file.path(paste0("${STEPDIR:", stepName, "}"), "repeatEpigenomeCollection.rds")
 			sampleNames <- ft[inputPresent, "sampleName"]
 			markNames   <- ft[inputPresent,"mark"]
 			sampleNames.ext <- paste(sampleNames, markNames, sep="_")
@@ -789,17 +753,76 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 			inFileTable.fn         <- file.path(cfgDir, inFileTable.fn)
 			write.table(inFileTable, file=inFileTable.fn, quote=FALSE, row.names=FALSE, sep="\t", col.names=TRUE)
 
-			args.plotRepeatMarkTree <- c(
+			args.repeatEpigenomeCollection <- c(
 				rscript,
 				"--in", inFileTable.fn.forPipe,
-				"--out", outDir,
+				"--out", outFn,
 				"--config", cfgSavePath.forPipe,
 				"--anaman", anamanSavePath.forPipe
 			)
 
+			ft <- addFile(ft, outFn, NA, NA, NA, stepName) #fileTable, fileName, dataType, mark, sampleName, analysisStep
+
 			parentSteps <- character()
 			if (is.element("methCalling", getSteps(pipr))) parentSteps <- c(parentSteps, "methCalling")
 			if (is.element("chipQuantification", getSteps(pipr))) parentSteps <- c(parentSteps, "chipQuantification")
+			pipr <- addStep(pipr, stepName, cmd.repeatEpigenomeCollection, args.repeatEpigenomeCollection, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
+		}
+		#-----------------------------------------------------------------------
+		stepName <- "plotRepeatGroupTreesMeth"
+		cmd.plotRepeatGroupTreesMeth <- .config$rscript.exec
+		rscript <- system.file(file.path("extdata", "exec", "plotRepeatGroupTreesMeth.R"), package="epiRepeatR")
+		inputPresent <- (ft[,"analysisStep"] %in% c("repeatEpigenomeCollection")) & ft[,"fileType"]=="rds"
+		doStep <- any(inputPresent)
+		if (doStep){
+			outDir <- file.path(paste0("${STEPDIR:", stepName, "}"))
+			recFn <- ft[inputPresent,"fileName"]
+			if (length(recFn) > 1) {
+				logger.warning(paste0("Multiple RepeatEpigenomeCollection files found (",stepName,") --> selecting the first one"))
+				recFn <- recFn[1]
+			}
+
+			args.plotRepeatGroupTreesMeth <- c(
+				rscript,
+				"--in", recFn,
+				"--out", outDir,
+				"--config", cfgSavePath.forPipe
+			)
+
+			parentSteps <- character()
+			if (is.element("repeatEpigenomeCollection", getSteps(pipr))) parentSteps <- "repeatEpigenomeCollection"
+			pipr <- addStep(pipr, stepName, cmd.plotRepeatGroupTreesMeth, args.plotRepeatGroupTreesMeth, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
+		}
+		#-----------------------------------------------------------------------
+		stepName <- "plotRepeatMarkTree"
+		cmd.plotRepeatMarkTree <- .config$rscript.exec
+		rscript <- system.file(file.path("extdata", "exec", "plotRepeatMarkTree.R"), package="epiRepeatR")
+		inputPresent <- (ft[,"analysisStep"] %in% c("repeatEpigenomeCollection")) & ft[,"fileType"]=="rds"
+		# TODO: MAYBE: carry out the step if there are chipQuantifications
+		doStep <- any(inputPresent)
+		if (doStep){
+			outDir <- file.path(paste0("${STEPDIR:", stepName, "}"))
+			recFn <- ft[inputPresent,"fileName"]
+			if (length(recFn) > 1) {
+				logger.warning(paste0("Multiple RepeatEpigenomeCollection files found (",stepName,") --> selecting the first one"))
+				recFn <- recFn[1]
+			}
+
+			args.plotRepeatMarkTree <- c(
+				rscript,
+				"--in", recFn,
+				"--out", outDir,
+				"--config", cfgSavePath.forPipe
+			)
+
+			parentSteps <- character()
+			if (is.element("repeatEpigenomeCollection", getSteps(pipr))) parentSteps <- "repeatEpigenomeCollection"
 			pipr <- addStep(pipr, stepName, cmd.plotRepeatMarkTree, args.plotRepeatMarkTree, parents=parentSteps)
 			logger.status(c("Added step:", stepName))
 		} else {

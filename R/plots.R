@@ -211,82 +211,12 @@ repPlot_groupSummary <- function(
 	}
 }
 
-#' filterRepRef_meth
-#'
-#' Given a reference of repetitive elements and the results of repeat methylation calling, remove repeats that do not fulfill
-#' the coverage criteria in any sample
-#'
-#' @param repRef	      \code{\linkS4class{RepeatReference}} object
-#' @param methCallResList list of objects as returned by \code{\link{getMethylationCalls,RepeatAlignment-method}}. This list contains one result for each sample.
-#' @param minReads 		  threshold for the minimum number of reads required to cover a repeat
-#' @param minCpGs		  threshold for the minimum number of CpGs that must be contained in a repeat
-#' @return modified repeat reference with repeats removed that do not fulfill the criteria
-#' 
-#' @details
-#' A repeat must fulfill the criteria in all samples in order to be retained
-#'
-#' @author Fabian Mueller
-#' @noRd
-filterRepRef_meth <- function(repRef, methCallResList, minReads=100, minCpGs=2){
-	repRefNames <- getRepeatIds(repRef)
-
-	# rrKmerCounts <- getKmerCounts(repRef)
-	numCG <- do.call("cbind",lapply(methCallResList, FUN=function(x){
-		sapply(x[repRefNames], FUN=function(r){
-			if (is.null(r)) return(0) else return(length(r$methCalls$cPos))
-		})
-	}))
-	numReads <- do.call("cbind",lapply(methCallResList, FUN=function(x){
-		sapply(x[repRefNames], FUN=function(r){
-			if (is.null(r)) return(0) else return(r$readStats["numReads"])
-		})
-	}))
-
-	survive <- numCG >= minCpGs & numReads >= minReads
-	survive <- apply(survive,1,all)
-	return(filterRepeats_wl(repRef, repRefNames[survive]))
-}
-#' filterRepRef_chip
-#'
-#' Given a reference of repetitive elements and the results of repeat quantification from ChIP-seq, remove repeats that do not fulfill
-#' the coverage criteria in any sample
-#'
-#' @param repRef	      \code{\linkS4class{RepeatReference}} object
-#' @param quantResList    list of objects as returned by \code{\link{computeEnrichment,RepeatAlignment-method}}. This list contains one result for each sample.
-#' @param minReads 		  threshold for the minimum number of reads required to cover a repeat
-#' @return modified repeat reference with repeats removed that do not fulfill the criteria
-#' 
-#' @details
-#' A repeat must fulfill the criteria in all samples in order to be retained
-#'
-#' @author Fabian Mueller
-#' @noRd
-filterRepRef_chip <- function(repRef, quantResList, minReads=100){
-	repRefNames <- getRepeatIds(repRef)
-
-	numReads.chip <- do.call("cbind",lapply(quantResList, FUN=function(x){
-		sapply(x[repRefNames], FUN=function(r){
-			if (is.null(r)) return(0) else return(r$readStats["numReads_chip"])
-		})
-	}))
-	numReads.input <- do.call("cbind",lapply(quantResList, FUN=function(x){
-		sapply(x[repRefNames], FUN=function(r){
-			if (is.null(r)) return(0) else return(r$readStats["numReads_input"])
-		})
-	}))
-
-	survive <- numReads.chip >= minReads & numReads.input >= minReads
-	survive <- apply(survive,1,all)
-	return(filterRepeats_wl(repRef, repRefNames[survive]))
-}
 
 #' createRepPlot_groupSummaryTrees_meth
 #'
 #' Plots a repeat sequence group summary tree for methylation values for each grouping information entry
 #'
-#' @param repMethCallFns	vector of filenames which point to RData objects (\code{rds} files) containing methylation information. They should contain object in the format as ouput by \code{\link{getMethylationCalls,RepeatAlignment-method}} 
-#' @param sampleNames		vector of sample names to be used. Must be in the same order as \code{repMethCallFns}
-#' @param sampleGroups 		list of assignments of samples/experiments to groups. Obtained by the \code{\link{getSampleGroups}} function
+#' @param .obj	            \code{\linkS4class{RepeatEpigenomeCollection}} object
 #' @param plotDir			Output directory where the plots are saved to
 #' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
 #' @param minReads			filtering parameter: specify the minimum number of reads that must match to a given repeat element in order for the repeat to be added to the plot
@@ -294,60 +224,20 @@ filterRepRef_chip <- function(repRef, quantResList, minReads=100){
 #' @return nothing of particular interest
 #'
 #' @details
-#' The reference repeats are obtained via \code{RepeatReference()}. Which repeats are used is regulated by the filtering parameters
+#' Which repeats are used is regulated by the filtering parameters.
 #' One PDF file for each comparison information is created in the output directory
 #'
 #' @author Fabian Mueller
 #' @noRd
-createRepPlot_groupSummaryTrees_meth <- function(repMethCallFns, sampleNames, sampleGroups, plotDir, dendroMethod="repeatFamily", minReads=100, minCpGs=2){
+createRepPlot_groupSummaryTrees_meth <- function(.obj, plotDir, dendroMethod="repeatFamily", minReads=100, minCpGs=2){
 
-						# ft <- getFileTable(am)
-						# ft.inds <- ft[,"mark"]=="DNAmeth" & ft[,"fileType"]=="rds" & ft[,"analysisStep"]=="methCalling"
-						# repMethCallFns <- prependAnalysisDirForFilename(am, ft[ft.inds,"fileName"], outDir)
-						# sampleNames <- ft[ft.inds, "sampleName"]
-						# samAnnot <- getSampleAnnot(am)
-						# sampleGroups <- getSampleGroups(samAnnot[rownames(samAnnot) %in% sampleNames,,drop=FALSE])
-						# plotDir <- "/DEEP_fhgfs/projects/fmueller/tmp/repeatPlots" #file.path(outDir)
-						# minReads <- 100
-						# minCpGs <- 2
+	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs)
+	repRef <- getRepRef(rec)
 
+	sampleGroups <- getSampleGroups(getAnnot(rec), addAll=TRUE)
 
-	if (length(repMethCallFns)!=length(sampleNames)){
-		stop("incompatible repMethCallFns and sampleNames parameters")
-	}
-
-	repRef <- RepeatReference()
-
-	methCallResList <- lapply(repMethCallFns, FUN=function(fn){
-		res <- readRDS(fn)
-		return(res)
-	})
-	names(methCallResList) <- sampleNames
-
-	repRef <- filterRepRef_meth(repRef, methCallResList, minReads=minReads, minCpGs=minCpGs)
-
-	repRefNames <- getRepeatIds(repRef)
-
-	methScores <- do.call("cbind",lapply(methCallResList,FUN=function(mc){
-		sapply(mc[repRefNames],FUN=function(r){
-			if (is.null(r)) {
-				return(NA)
-			} else {
-				methLvl <- mean(r$methCalls[,"numM"]/r$methCalls[,"numT"],na.rm=TRUE)
-				return(methLvl)
-			}
-		})
-	}))
-	covgMat <- do.call("cbind",lapply(methCallResList,FUN=function(mc){
-		sapply(mc[repRefNames],FUN=function(r){
-			if (is.null(r)) {
-				return(NA)
-			} else {
-				r$readStats["numReads"]
-			}
-		})
-	}))
-	rownames(covgMat) <- repRefNames
+	methScores <- getRepeatScores(rec, "DNAmeth")
+	covgMat    <- getRepeatCovg(rec, "DNAmeth")
 
 	#create a plot for each grouping info
 	for (i in 1:length(sampleGroups)){
@@ -368,14 +258,12 @@ createRepPlot_groupSummaryTrees_meth <- function(repMethCallFns, sampleNames, sa
 	res <- list(
 		status="success",
 		callParams=list(
-			repMethCallFns=repMethCallFns,
-			sampleNames=sampleNames,
-			sampleGroups=sampleGroups,
-			plotDir=plotDir,			
+			plotDir=plotDir,
 			minReads=minReads,
 			minCpGs=minCpGs
 		)
 	)
+	invisible(res)
 }
 
 
@@ -383,9 +271,7 @@ createRepPlot_groupSummaryTrees_meth <- function(repMethCallFns, sampleNames, sa
 #'
 #' Plots a repeat sequence summary tree for all marks in the dataset
 #'
-#' @param repMethCallFns	vector of filenames which point to RData objects (\code{rds} files) containing methylation information. They should contain object in the format as ouput by \code{\link{getMethylationCalls,RepeatAlignment-method}} 
-#' @param sampleNames		vector of sample names to be used. Must be in the same order as \code{repMethCallFns}
-#' @param markNames 		vector of names of the mark assayed
+#' @param .obj	            \code{\linkS4class{RepeatEpigenomeCollection}} object
 #' @param plotDir			Output directory where the plots are saved to
 #' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
 #' @param minReads			filtering parameter: specify the minimum number of reads that must match to a given repeat element in order for the repeat to be added to the plot
@@ -398,72 +284,32 @@ createRepPlot_groupSummaryTrees_meth <- function(repMethCallFns, sampleNames, sa
 #'
 #' @author Fabian Mueller
 #' @noRd
-createRepPlot_markTree <- function(quantFns, sampleNames, markNames, plotDir, sampleGroups=list(), dendroMethod="repeatFamily", minReads=100, minCpGs=2){
+createRepPlot_markTree <- function(.obj, plotDir, dendroMethod="repeatFamily", minReads=100, minCpGs=2){
 
-	if (length(quantFns)!=length(sampleNames) || length(quantFns)!=length(markNames)) {
-		stop("incompatible quantFns, sampleNames and markNames parameters")
-	}
-	sampleNames.full <- paste(sampleNames, markNames, sep="_")
+	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs)
+	rec <- filterRepRefChip(.obj, minReads=minReads)
+	repRef <- getRepRef(rec)
 
-	repRef <- RepeatReference()
-	nFiles <- length(quantFns)
-	quantResList <- lapply(quantFns, FUN=function(fn){
-		res <- readRDS(fn)
-		return(res)
-	})
-	names(quantResList) <- sampleNames.full
+	sampleNames <- getSamples(rec)
+	markLvls <- getMarks(rec)
 
-	isMeth <- markNames=="DNAmeth"
-	isChip <- !isMeth
+	sampleGroups <- getSampleGroups(getAnnot(rec), addAll=TRUE)
 
-	repRef <- filterRepRef_meth(repRef, quantResList[isMeth], minReads=minReads, minCpGs=minCpGs)
-	repRef <- filterRepRef_chip(repRef, quantResList[isChip], minReads=minReads)
+	sampleNames.exp <- rep(sampleNames, length(markLvls))
+	markNames.exp   <- rep(markLvls, each=length(sampleNames))
+	sampleNames.full <- paste(sampleNames.exp, markNames.exp, sep="_")
 
-	repRefNames <- getRepeatIds(repRef)
-
-	scoreMat <- do.call("cbind",lapply(1:nFiles, FUN=function(i){
-		sapply(quantResList[[i]][repRefNames],FUN=function(r){
-			if (is.null(r)) {
-				return(NA)
-			} else {
-				if (isMeth[i]){
-					sc <- mean(r$methCalls[,"numM"]/r$methCalls[,"numT"],na.rm=TRUE)
-				} else if (isChip[i]){
-					sc <- r$log2fc
-				} else {
-					sc <- NA
-				}
-				return(sc)
-			}
-		})
+	scoreMat <- do.call("cbind", lapply(markLvls, FUN=function(mn){
+		getRepeatScores(rec, mn)
 	}))
 	colnames(scoreMat) <- sampleNames.full
-
-	#color leafs by mean relative coverage
-	covgMat <- do.call("cbind",lapply(1:nFiles, FUN=function(i){
-		sapply(quantResList[[i]][repRefNames],FUN=function(r){
-			if (is.null(r)) {
-				return(NA)
-			} else {
-				if (isMeth[i]){
-					res <- r$readStats["numReads"]
-				} else if (isChip[i]){
-					res <- r$readStats["numReads_chip"]
-				} else {
-					res <- NA
-				}
-				return(res)
-			}
-		})
+	covgMat <- do.call("cbind", lapply(markLvls, FUN=function(mn){
+		getRepeatCovg(rec, mn)
 	}))
 	colnames(covgMat) <- sampleNames.full
-	covgMat.rel <- apply(covgMat, 2, FUN=function(x){x/sum(x)}) # relative coverage
-	covg.score <- rowMeans(covgMat.rel, na.rm=TRUE)
-	leafColors <- colorize.value(covg.score, colscheme=colorpanel(100,"white","black"))
 
-	markLvls <- sort(unique(markNames))
 	markGroups <- lapply(markLvls, FUN=function(mn){
-		sampleNames.full[markNames==mn]
+		sampleNames.full[markNames.exp==mn]
 	})
 	names(markGroups) <- markLvls
 
@@ -485,7 +331,7 @@ createRepPlot_markTree <- function(quantFns, sampleNames, markNames, plotDir, sa
 			ggn <- names(sampleGroups)[i]
 			ggs <- sampleGroups[[i]]
 			ggs.sn <- lapply(ggs, FUN=function(gg){
-				sampleNames.full[sampleNames %in% gg]
+				sampleNames.full[sampleNames.exp %in% gg]
 			})
 			names(ggs.sn) <- names(ggs)
 
@@ -514,14 +360,11 @@ createRepPlot_markTree <- function(quantFns, sampleNames, markNames, plotDir, sa
 			dev.off()
 		}
 	}
+
 	res <- list(
 		status="success",
 		callParams=list(
-			quantFns=quantFns,
-			sampleNames=sampleNames,
-			markNames=markNames,
 			plotDir=plotDir,
-			sampleGroups=sampleGroups,		
 			minReads=minReads,
 			minCpGs=minCpGs
 		)

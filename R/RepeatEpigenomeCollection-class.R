@@ -112,10 +112,17 @@ setMethod("show", "RepeatEpigenomeCollection",
 	}
 )
 
-if (!isGeneric("getSamples")) setGeneric("getSamples", function(.Object) standardGeneric("getSamples"))
+if (!isGeneric("getSamples")) setGeneric("getSamples", function(.Object, ...) standardGeneric("getSamples"))
 setMethod("getSamples", signature(.Object="RepeatEpigenomeCollection"),
-	function(.Object){
-		return(.Object@samples)
+	function(.Object, marks=NULL){
+		sns <- .Object@samples
+		if (is.null(marks)){
+			return(sns)
+		} else {
+			smt <- getSampleMarkTable(.Object)
+			snInds <- rowAlls(smt[,marks, drop=FALSE])
+			return(sns[snInds])
+		}
 	}
 )
 if (!isGeneric("getMarks")) setGeneric("getMarks", function(.Object) standardGeneric("getMarks"))
@@ -128,6 +135,20 @@ if (!isGeneric("getAnnot")) setGeneric("getAnnot", function(.Object) standardGen
 setMethod("getAnnot", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object){
 		return(.Object@annot)
+	}
+)
+if (!isGeneric("getSampleMarkTable")) setGeneric("getSampleMarkTable", function(.Object) standardGeneric("getSampleMarkTable"))
+setMethod("getSampleMarkTable", signature(.Object="RepeatEpigenomeCollection"),
+	function(.Object){
+		sns <- .Object@samples
+		marks <- getMarks(.Object)
+		hasMark <- do.call("rbind", lapply(sns, FUN=function(sn){
+			sapply(marks, FUN=function(mn){
+				!is.null(.Object@epiQuant[[sn]][[mn]])
+			})
+		}))
+		rownames(hasMark) <- sns
+		return(hasMark)
 	}
 )
 if (!isGeneric("getRepRef")) setGeneric("getRepRef", function(.Object) standardGeneric("getRepRef"))
@@ -223,6 +244,133 @@ setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 #NOTE: getRepeatCovg and getRepeatScores can lead to different repeat-sample combinations to be NA
 # for methylation, not all reads covering the repeat might have CpG information
 # for ChIPseq the coverage might be 0 for either the input or the chip
+
+#' filterRepRefMeth
+#'
+#' Given a \code{\linkS4class{RepeatEpigenomeCollection}} object, remove repeats that do not fulfill
+#' the coverage criteria in any sample
+#'
+#' @param .Object	      \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param minReads 		  threshold for the minimum number of reads required to cover a repeat
+#' @param minCpGs		  threshold for the minimum number of CpGs that must be contained in a repeat
+#' @return modified \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' 
+#' @details
+#' A repeat must fulfill the criteria in all samples in order to be retained
+#'
+#' @author Fabian Mueller
+#' @noRd
+if (!isGeneric("filterRepRefMeth")) setGeneric("filterRepRefMeth", function(.Object, ...) standardGeneric("filterRepRefMeth"))
+setMethod("filterRepRefMeth", signature(.Object="RepeatEpigenomeCollection"),
+	function(.Object,  minReads=100, minCpGs=2){
+		res <- .Object
+		repRef <- getRepRef(.Object)
+		repRefNames <- getRepeatIds(repRef)
+		nReps <- length(repRefNames)
+		zeroVec <- rep(0, nReps)
+		methSamples <- getSamples(.Object, marks="DNAmeth")
+		if (length(methSamples) < 1){
+			logger.warning("No sample with DNA methylation measurements found. --> skipping filtering")
+			return(.Object)
+		}
+		numCG <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
+			rr <- zeroVec
+			if (length(x[["DNAmeth"]][repRefNames]) > 0) {
+				rr <- sapply(x[["DNAmeth"]][repRefNames], FUN=function(r){
+					if (is.null(r)) return(0) else return(length(r$methCalls$cPos))
+				})
+			}
+			return(rr)
+		}))
+		numReads <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
+			rr <- zeroVec
+			if (length(x[["DNAmeth"]][repRefNames]) > 0) {
+				rr <- sapply(x[["DNAmeth"]][repRefNames], FUN=function(r){
+					if (is.null(r)) return(0) else return(r$readStats["numReads"])
+				})
+			}
+			return(rr)
+		}))
+		survive <- numCG >= minCpGs & numReads >= minReads
+		survive <- apply(survive,1,all)
+		repRef.filtered <- filterRepeats_wl(repRef, repRefNames[survive])
+
+		res@repRef <- repRef.filtered
+		return(res)
+	}
+)
+
+#' filterRepRefChip
+#'
+#' Given a \code{\linkS4class{RepeatEpigenomeCollection}} object, remove repeats that do not fulfill
+#' the coverage criteria in any sample
+#'
+#' @param .Object	      \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param minReads 		  threshold for the minimum number of reads required to cover a repeat
+#' @return modified \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' 
+#' @details
+#' A repeat must fulfill the criteria in all samples in order to be retained
+#'
+#' @author Fabian Mueller
+#' @noRd
+if (!isGeneric("filterRepRefChip")) setGeneric("filterRepRefChip", function(.Object, ...) standardGeneric("filterRepRefChip"))
+setMethod("filterRepRefChip", signature(.Object="RepeatEpigenomeCollection"),
+	function(.Object,  minReads=100){
+		res <- .Object
+		repRef <- getRepRef(.Object)
+		repRefNames <- getRepeatIds(repRef)
+		nReps <- length(repRefNames)
+		zeroVec <- rep(0, nReps)
+
+		chipMarks <- getMarks(.Object)[inferMarkTypes(getMarks(.Object))=="ChIPseq"]
+		if (length(chipMarks) < 1){
+			logger.warning("No ChIP mark found")
+			return(res)
+		}
+		smt <- getSampleMarkTable(.Object)[, chipMarks, drop=FALSE]
+		chipSamples <- getSamples(.Object)[rowAnys(smt)]
+		if (length(chipSamples) < 1){
+			logger.warning("No sample with ChIP measurements found. --> skipping filtering")
+			return(.Object)
+		}
+		numReadsTabs.chip <- lapply(chipMarks, FUN=function(mn){
+			do.call("cbind",lapply(.Object@epiQuant[chipSamples], FUN=function(x){
+				rr <- zeroVec
+				if (length(x[[mn]][repRefNames]) > 0) {
+					rr <- sapply(x[mn][repRefNames], FUN=function(r){
+						if (is.null(r)) return(0) else return(r$readStats["numReads_chip"])
+					})
+				}
+				return(rr)
+			}))
+		})
+		names(numReadsTabs.chip) <- chipMarks
+		numReadsTabs.input <- lapply(chipMarks, FUN=function(mn){
+			do.call("cbind",lapply(.Object@epiQuant[chipSamples], FUN=function(x){
+				rr <- zeroVec
+				if (length(x[[mn]][repRefNames]) > 0) {
+					rr <- sapply(x[mn][repRefNames], FUN=function(r){
+						if (is.null(r)) return(0) else return(r$readStats["numReads_input"])
+					})
+				}
+				return(rr)
+			}))
+		})
+		names(numReadsTabs.input) <- chipMarks
+
+		# keep repeats in which for any chip mark, all samples fullfill the read coverage criterion for both chip and input
+		survive <- matrix(FALSE, nrow=nReps, ncol=length(chipSamples))
+		for (mn in chipMarks){
+			survive <- survive | (numReadsTabs.chip[[mn]] >= minReads & numReadsTabs.input[[mn]] >= minReads)
+		}
+		survive <- apply(survive,1,all)
+		repRef.filtered <- filterRepeats_wl(repRef, repRefNames[survive])
+
+		res@repRef <- repRef.filtered
+		return(res)
+	}
+)
 
 ################################################################################
 # Sandbox
