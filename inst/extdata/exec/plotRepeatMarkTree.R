@@ -17,6 +17,6 @@ rec <- readRDS(cmdArgs$input)
 
 epiRepeatR:::createRepPlot_markTree(
 	rec, cmdArgs$output,
-	dendroMethod=epiRepeatR:::.config$plotRepTree.dendroMethod,
-	minReads=epiRepeatR:::.config$plotRepTree.meth.minReads, minCpGs=epiRepeatR:::.config$plotRepTree.meth.minCpGs
+	dendroMethod=getConfigElement("plotRepTree.dendroMethod"),
+	minReads=getConfigElement("plotRepTree.meth.minReads"), minCpGs=getConfigElement("plotRepTree.meth.minCpGs"), minCpGcov=getConfigElement("meth.minCpGcov")
 )

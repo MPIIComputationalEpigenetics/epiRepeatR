@@ -221,6 +221,7 @@ repPlot_groupSummary <- function(
 #' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
 #' @param minReads			filtering parameter: specify the minimum number of reads that must match to a given repeat element in order for the repeat to be added to the plot
 #' @param minCpGs			filtering parameter: specify the minimum number of CpG that must be contained in a given repeat element in order for the repeat to be added to the plot
+#' @param minCpGcov			filtering parameter: specify the minimum number of reads that must cover a given CpG in order to be considered a valid methylation measurement
 #' @return nothing of particular interest
 #'
 #' @details
@@ -229,15 +230,33 @@ repPlot_groupSummary <- function(
 #'
 #' @author Fabian Mueller
 #' @noRd
-createRepPlot_groupSummaryTrees_meth <- function(.obj, plotDir, dendroMethod="repeatFamily", minReads=100, minCpGs=2){
+createRepPlot_groupSummaryTrees_meth <- function(
+		.obj,
+		plotDir,
+		dendroMethod="repeatFamily",
+		minReads=getConfigElement("plotRepTree.meth.minReads"),
+		minCpGs=getConfigElement("plotRepTree.meth.minCpGs"),
+		minCpGcov=getConfigElement("meth.minCpGcov")){
 
-	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs)
+	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs, minCpGcov=minCpGcov)
 	repRef <- getRepRef(rec)
+	if (length(getRepeatIds(repRef)) < 1) logger.error("No repeat sequence retained after filtering")
 
-	sampleGroups <- getSampleGroups(getAnnot(rec), addAll=TRUE)
+	methScores <- getRepeatScores(rec, "DNAmeth", dropEmptySamples=TRUE, minCpGcov=minCpGcov)
+	covgMat    <- getRepeatCovg(rec, "DNAmeth", dropEmptySamples=TRUE)
+	if (ncol(covgMat) < 1){
+		logger.info("No read coverage found. --> using the number of repeat instances as a proxy.")
+		covgMat <- getRepeatCovg(rec, "DNAmeth", dropEmptySamples=TRUE, type="numInstances")
+	}
+	sampleNames <- colnames(methScores)
+	if (any(sampleNames != colnames(covgMat))){
+		logger.error("Nonmatching sample names for meth scores and coverage")
+	}
 
-	methScores <- getRepeatScores(rec, "DNAmeth")
-	covgMat    <- getRepeatCovg(rec, "DNAmeth")
+	annot <- getAnnot(rec)
+	rownames(annot) <- getSamples(rec)
+	annot <- annot[sampleNames,]
+	sampleGroups <- getSampleGroups(annot, addAll=TRUE)
 
 	#create a plot for each grouping info
 	for (i in 1:length(sampleGroups)){
@@ -274,8 +293,10 @@ createRepPlot_groupSummaryTrees_meth <- function(.obj, plotDir, dendroMethod="re
 #' @param .obj	            \code{\linkS4class{RepeatEpigenomeCollection}} object
 #' @param plotDir			Output directory where the plots are saved to
 #' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
+#' @param normChipMethod    method for normalizing ChIP enrichment scores per mark. See \code{normalizeMatrix} class for possible values. 
 #' @param minReads			filtering parameter: specify the minimum number of reads that must match to a given repeat element in order for the repeat to be added to the plot
 #' @param minCpGs			filtering parameter: specify the minimum number of CpG that must be contained in a given repeat element in order for the repeat to be added to the plot
+#' @param minCpGcov			filtering parameter: specify the minimum number of reads that must cover a given CpG in order to be considered a valid methylation measurement
 #' @return nothing of particular interest
 #'
 #' @details
@@ -284,14 +305,23 @@ createRepPlot_groupSummaryTrees_meth <- function(.obj, plotDir, dendroMethod="re
 #'
 #' @author Fabian Mueller
 #' @noRd
-createRepPlot_markTree <- function(.obj, plotDir, dendroMethod="repeatFamily", minReads=100, minCpGs=2){
+createRepPlot_markTree <- function(
+		.obj,
+		plotDir,
+		dendroMethod="repeatFamily",
+		normChipMethod="none",
+		minReads=getConfigElement("plotRepTree.meth.minReads"),
+		minCpGs=getConfigElement("plotRepTree.meth.minCpGs"),
+		minCpGcov=getConfigElement("meth.minCpGcov")){
 
-	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs)
-	rec <- filterRepRefChip(.obj, minReads=minReads)
+	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs, minCpGcov=minCpGcov)
+	rec <- filterRepRefChip(rec, minReads=minReads)
 	repRef <- getRepRef(rec)
+	if (length(getRepeatIds(repRef)) < 1) logger.error("No repeat sequence retained after filtering")
 
 	sampleNames <- getSamples(rec)
 	markLvls <- getMarks(rec)
+	markLvls.isEnrichment <- !(markLvls %in% c("DNAmeth"))
 
 	sampleGroups <- getSampleGroups(getAnnot(rec), addAll=TRUE)
 
@@ -300,16 +330,30 @@ createRepPlot_markTree <- function(.obj, plotDir, dendroMethod="repeatFamily", m
 	sampleNames.full <- paste(sampleNames.exp, markNames.exp, sep="_")
 
 	scoreMat <- do.call("cbind", lapply(markLvls, FUN=function(mn){
-		getRepeatScores(rec, mn)
+		rr <- getRepeatScores(rec, mn, minCpGcov=minCpGcov)
+		mt <- inferMarkTypes(mn)
+		if (is.element(mt, c("ChIPseq"))){
+			rr <- normalizeMatrix(rr, method=normChipMethod)
+		}
+		return(rr)
 	}))
 	colnames(scoreMat) <- sampleNames.full
+	hasScore <- apply(scoreMat,2,FUN=function(x){!all(is.na(x))})
 	covgMat <- do.call("cbind", lapply(markLvls, FUN=function(mn){
-		getRepeatCovg(rec, mn)
+		cm <- getRepeatCovg(rec, mn)
+		if (mn == "DNAmeth" && all(is.na(cm))){
+			logger.info("No read coverage found. --> using the number of repeat instances as a proxy.")
+			cm <- getRepeatCovg(rec, mn, type="numInstances")
+		}
+		return(cm)
 	}))
 	colnames(covgMat) <- sampleNames.full
+	covgMat.rel <- apply(covgMat, 2, FUN=function(x){x/sum(x)}) # relative coverage
+	covg.score <- rowMeans(covgMat.rel, na.rm=TRUE)
+	leafColors <- colorize.value(covg.score, colscheme=colorpanel(100,"white","black"))
 
 	markGroups <- lapply(markLvls, FUN=function(mn){
-		sampleNames.full[markNames.exp==mn]
+		sampleNames.full[hasScore & markNames.exp==mn]
 	})
 	names(markGroups) <- markLvls
 

@@ -18,6 +18,7 @@
 .config$plotRepTree.dendroMethod <- "repeatFamily"
 .config$plotRepTree.meth.minCpGs  <- 2
 .config$plotRepTree.meth.minReads <- 100
+.config$meth.minCpGcov  <- 5 #NULL
 .config$genomeRepeatTrack <- NULL
 .config$debug <- FALSE
 #assignInNamespace(".config", .config, "epiRepeatR") # to manually assign in non-exported variables
@@ -75,6 +76,9 @@
 #'   \item{\bold{\code{plotRepTree.meth.minReads}}\code{ = 100}}{
 #'        Minimum number of reads that must match to a given repeat element in order to be shown in the resulting methylation tree plots.
 #'   }
+#'   \item{\bold{\code{meth.minCpGcov}}\code{ = 5}}{
+#'        Minimum number of reads covering a CpG in a repeat element in order to be considered in computing methylation.
+#'   }
 #'   \item{\bold{\code{debug}}\code{ = FALSE}}{
 #'        \code{Logical specifying whether the debug mode is enabled and additional debug-related output should be provided.}
 #'   }
@@ -85,6 +89,17 @@ setConfigElement <- function(name, value){
 	.config[[name]] <- value
 }
 
+#' getConfigElement
+#'
+#' Get the value for a configuration item
+#'
+#' @param name	name of the config item
+#' @return the value of the config item
+#' @author Fabian Mueller
+#' @export
+getConfigElement <- function(name){
+	.config[[name]]
+}
 #' saveConfig
 #'
 #' Save the current configuration to a configuration file (JSON)

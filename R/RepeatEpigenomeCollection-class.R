@@ -160,15 +160,26 @@ setMethod("getRepRef", signature(.Object="RepeatEpigenomeCollection"),
 
 if (!isGeneric("getRepeatScores")) setGeneric("getRepeatScores", function(.Object, ...) standardGeneric("getRepeatScores"))
 setMethod("getRepeatScores", signature(.Object="RepeatEpigenomeCollection"),
-	function(.Object, mark, dropEmptySamples=FALSE){
+	function(.Object, mark, dropEmptySamples=FALSE, minCpGcov=getConfigElement("meth.minCpGcov")){
 		if (!is.element(mark, getMarks(.Object))){
 			stop(paste0("unknown mark:", mark))
 		}
 		markType <- inferMarkTypes(mark)
 		scoreFun <- function(x){NA}
 		if (markType == "DNAmeth"){
-			scoreFun <- function(x){
-				mean(x$methCalls[,"numM"]/x$methCalls[,"numT"], na.rm=TRUE)
+			if (is.null(minCpGcov) || minCpGcov < 1){
+				scoreFun <- function(x){
+					mean(x$methCalls[,"numM"]/x$methCalls[,"numT"], na.rm=TRUE)
+				}
+			} else {
+				scoreFun <- function(x){
+					hasCov <- x$methCalls[,"numT"] >= minCpGcov
+					if (sum(hasCov) > 0){
+						return(mean(x$methCalls[hasCov,"numM"]/x$methCalls[hasCov,"numT"], na.rm=TRUE))
+					} else {
+						return(NA)
+					}
+				}
 			}
 		} else if (markType == "ChIPseq"){
 			scoreFun <- function(x){
@@ -202,15 +213,34 @@ setMethod("getRepeatScores", signature(.Object="RepeatEpigenomeCollection"),
 
 if (!isGeneric("getRepeatCovg")) setGeneric("getRepeatCovg", function(.Object, ...) standardGeneric("getRepeatCovg"))
 setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
-	function(.Object, mark, dropEmptySamples=FALSE){
+	function(.Object, mark, dropEmptySamples=FALSE, type="numReads"){
 		if (!is.element(mark, getMarks(.Object))){
 			stop(paste0("unknown mark:", mark))
 		}
 		markType <- inferMarkTypes(mark)
 		covgFun <- function(x){NA}
 		if (markType == "DNAmeth"){
-			covgFun <- function(x){
-				x$readStats["numReads"]
+			if (type=="maxCpGcov"){
+				covgFun <- function(x){
+					max(x$methCalls$numT, na.rm=TRUE)
+				}
+			} else if (type=="numInstances"){
+				# for data inferred from genome methylation calls only: use the
+				# number of unique repeat instances
+				covgFun <- function(x){
+					if (is.element("repeatInstanceIndex", colnames(x$methCalls))){
+						return(length(unique(x$methCalls$repeatInstanceIndex)))
+					} else {
+						return(0)
+					}
+					
+				}
+			} else if (type=="numReads") {
+				covgFun <- function(x){
+					x$readStats["numReads"]
+				}
+			} else {
+				logger.error("Invalid coverage type")
 			}
 		} else if (markType == "ChIPseq"){
 			covgFun <- function(x){
@@ -253,6 +283,7 @@ setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 #' @param .Object	      \code{\linkS4class{RepeatEpigenomeCollection}} object
 #' @param minReads 		  threshold for the minimum number of reads required to cover a repeat
 #' @param minCpGs		  threshold for the minimum number of CpGs that must be contained in a repeat
+#' @param minCpGcov		  threshold for the minimum number of CpGs that must be contained in a repeat
 #' @return modified \code{\linkS4class{RepeatEpigenomeCollection}} object
 #' 
 #' @details
@@ -262,7 +293,7 @@ setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 #' @noRd
 if (!isGeneric("filterRepRefMeth")) setGeneric("filterRepRefMeth", function(.Object, ...) standardGeneric("filterRepRefMeth"))
 setMethod("filterRepRefMeth", signature(.Object="RepeatEpigenomeCollection"),
-	function(.Object,  minReads=100, minCpGs=2){
+	function(.Object,  minReads=getConfigElement("plotRepTree.meth.minReads"), minCpGs=getConfigElement("plotRepTree.meth.minCpGs"), minCpGcov=getConfigElement("meth.minCpGcov")){
 		res <- .Object
 		repRef <- getRepRef(.Object)
 		repRefNames <- getRepeatIds(repRef)
@@ -273,25 +304,50 @@ setMethod("filterRepRefMeth", signature(.Object="RepeatEpigenomeCollection"),
 			logger.warning("No sample with DNA methylation measurements found. --> skipping filtering")
 			return(.Object)
 		}
-		numCG <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
-			rr <- zeroVec
-			if (length(x[["DNAmeth"]][repRefNames]) > 0) {
-				rr <- sapply(x[["DNAmeth"]][repRefNames], FUN=function(r){
-					if (is.null(r)) return(0) else return(length(r$methCalls$cPos))
-				})
+		survive.numCG <- matrix(TRUE,nrow=length(repRefNames),ncol=length(methSamples))
+		if (minCpGs > 1){
+			numCG <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
+				rr <- zeroVec
+				if (length(x[["DNAmeth"]][repRefNames]) > 0) {
+					rr <- sapply(x[["DNAmeth"]][repRefNames], FUN=function(r){
+						if (is.null(r)) return(0) else return(length(r$methCalls$cPos))
+					})
+				}
+				return(rr)
+			}))
+			survive.numCG <- numCG >= minCpGs
+		}
+		survive.numReads <- matrix(TRUE,nrow=length(repRefNames),ncol=length(methSamples))
+		if (minReads > 1){
+			numReads <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
+				rr <- zeroVec
+				if (length(x[["DNAmeth"]][repRefNames]) > 0) {
+					rr <- sapply(x[["DNAmeth"]][repRefNames], FUN=function(r){
+						if (is.null(r)) return(0) else return(r$readStats["numReads"])
+					})
+				}
+				return(rr)
+			}))
+			if (sum(numReads>0, na.rm=TRUE)){
+				survive.numReads <- numReads >= minReads
+			} else {
+				logger.warning("No element has a number of associated reads > 0. Ignore this warning if you are working with methylation calls originating from genome alignments.")
 			}
-			return(rr)
-		}))
-		numReads <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
-			rr <- zeroVec
-			if (length(x[["DNAmeth"]][repRefNames]) > 0) {
-				rr <- sapply(x[["DNAmeth"]][repRefNames], FUN=function(r){
-					if (is.null(r)) return(0) else return(r$readStats["numReads"])
-				})
-			}
-			return(rr)
-		}))
-		survive <- numCG >= minCpGs & numReads >= minReads
+		}
+		survive.CpGcov <- matrix(TRUE,nrow=length(repRefNames),ncol=length(methSamples))
+		if (!(is.null(minCpGcov) || minCpGcov < 1)){
+			maxCovg <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
+				rr <- zeroVec
+				if (length(x[["DNAmeth"]][repRefNames]) > 0) {
+					rr <- sapply(x[["DNAmeth"]][repRefNames], FUN=function(r){
+						if (is.null(r) || all(is.na(r$methCalls$numT))) return(0) else return(max(r$methCalls$numT, na.rm=TRUE))
+					})
+				}
+				return(rr)
+			}))
+			survive.CpGcov <- maxCovg >= minCpGcov
+		}
+		survive <- survive.numCG & survive.numReads & survive.CpGcov
 		survive <- apply(survive,1,all)
 		repRef.filtered <- filterRepeats_wl(repRef, repRefNames[survive])
 
@@ -316,7 +372,7 @@ setMethod("filterRepRefMeth", signature(.Object="RepeatEpigenomeCollection"),
 #' @noRd
 if (!isGeneric("filterRepRefChip")) setGeneric("filterRepRefChip", function(.Object, ...) standardGeneric("filterRepRefChip"))
 setMethod("filterRepRefChip", signature(.Object="RepeatEpigenomeCollection"),
-	function(.Object,  minReads=100){
+	function(.Object,  minReads=getConfigElement("plotRepTree.meth.minReads")){
 		res <- .Object
 		repRef <- getRepRef(.Object)
 		repRefNames <- getRepeatIds(repRef)
@@ -338,7 +394,7 @@ setMethod("filterRepRefChip", signature(.Object="RepeatEpigenomeCollection"),
 			do.call("cbind",lapply(.Object@epiQuant[chipSamples], FUN=function(x){
 				rr <- zeroVec
 				if (length(x[[mn]][repRefNames]) > 0) {
-					rr <- sapply(x[mn][repRefNames], FUN=function(r){
+					rr <- sapply(x[[mn]][repRefNames], FUN=function(r){
 						if (is.null(r)) return(0) else return(r$readStats["numReads_chip"])
 					})
 				}
@@ -350,7 +406,7 @@ setMethod("filterRepRefChip", signature(.Object="RepeatEpigenomeCollection"),
 			do.call("cbind",lapply(.Object@epiQuant[chipSamples], FUN=function(x){
 				rr <- zeroVec
 				if (length(x[[mn]][repRefNames]) > 0) {
-					rr <- sapply(x[mn][repRefNames], FUN=function(r){
+					rr <- sapply(x[[mn]][repRefNames], FUN=function(r){
 						if (is.null(r)) return(0) else return(r$readStats["numReads_input"])
 					})
 				}

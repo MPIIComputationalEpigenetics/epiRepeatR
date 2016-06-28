@@ -418,3 +418,47 @@ logger.cmd.args <- function(cmdArgs){
 	logger.completed()
 	invisible(NULL)
 }
+
+#' normalizeMatrix
+#'
+#' Apply normalizatio to columns of a given matrix
+#'
+#' @param x      a matrix of values to be normalized
+#' @param method method of normalization. Currently supported are:
+#'               \code{none} (no normalization),
+#'               \code{standard} (subtract the mean, devide by standard deviation),
+#'               \code{scale} (scale to the interval [0,1]) and
+#'               \code{quantile} (Quantile normalization)
+#' @param ...    arguments passed down to the actual normalization functions
+#' @return the normalized matrix
+#'
+#' @author Fabian Mueller
+#' @export
+normalizeMatrix <- function(x, method="standard", ...){
+	require(matrixStats)
+	normFuns <- list(
+		none = function(x){
+			return(x)
+		},
+		standard = function(x){
+			rr <- t( (t(x) - colMeans(x, na.rm=TRUE))/colSds(x, na.rm=TRUE) )
+			return(rr)
+		},
+		quantile = function(x){
+			require(preprocessCore)
+			# xr <- apply(x, 2, FUN=function(cc){rank(cc, ties.method="min")})
+			# xs <- apply(x, 2, sort)
+			# xo <- apply(x, 2, FUN=function(cc){order(cc)})
+			rr <- normalize.quantiles(x)
+			return(rr)
+		},
+		scale = function(x, a=0, b=1){
+			rr <- a + t( ((t(x) - colMins(x, na.rm=TRUE))*(b-a))/(colMaxs(x, na.rm=TRUE)-colMins(x, na.rm=TRUE)) )
+			return(rr)
+		}
+	)
+	if (!is.matrix(x)) logger.error("expected matrix [normalizeMatrix]")
+	if (!is.element(method, names(normFuns))) logger.error(c("unknown normalization method:", method))
+	res <- normFuns[[method]](x, ...)
+	return(res)
+}

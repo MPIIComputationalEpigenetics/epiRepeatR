@@ -4,7 +4,7 @@ Description: An R package for anlyzing the epigenetics of repetitive elements
 Authors@R: c(
     person("Fabian", "Mueller", email = "fmueller@mpi-inf.mpg.de",
     role = c("aut", "cre")))
-Date: 2016-04-11
+Date: 2016-06-06
 License: GPL-3
 Version: 0.3
 Depends:
@@ -14,10 +14,11 @@ Depends:
     Biostrings,
     jsonlite,
     igraph,
-    matrixStats
+    matrixStats,
+    argparse
 Imports:
 Suggests:
-    argparse
+    preprocessCore
 Collate:
 	'utils.R'
 	'config.R'
