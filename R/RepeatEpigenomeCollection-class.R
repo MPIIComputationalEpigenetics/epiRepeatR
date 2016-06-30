@@ -1,5 +1,47 @@
 setClassUnion("ListOrNULL", c("list", "NULL"))
 
+#' RepeatEpigenomeCollection Class
+#'
+#' A class for storing quantitative epigenetic data in repetitive elements of the genome
+#' 
+#' @details
+#' Multiple epigenetic marks are stored and each repetitive element (RE) in a given reference is assigned quantitative
+#' scores for each mark. A dataset of multiple samples can be annotated.
+#'
+#' @section Slots:
+#' \describe{
+#'   \item{\code{annot}}{
+#'       Annotation for the samples in the dataset.
+#'   }
+#'   \item{\code{repRef}}{
+#'       Repeat reference (of class \code{RepeatReference})
+#'   }
+#'   \item{\code{samples}}{
+#'       Samples contained in the dataset.
+#'   }
+#'   \item{\code{marks}}{
+#'       epigenetic marks contained in the dataset.
+#'   }
+#'   \item{\code{markTypes}}{
+#'       Annotation for the samples in the dataset.
+#'   }
+#'   \item{\code{epiQuant}}{
+#'       Data structure for storing the quantifications of the epigenetic marks across marks and samples
+#'   }
+#' 
+#' }
+#'
+#' @section Methods:
+#' \describe{
+#'   \item{\code{\link{getSamples,RepeatEpigenomeCollection-method}}}{
+#'       Return the sample indentifiers contained in the dataset.
+#'   }
+#' }
+#'
+#' @name RepeatEpigenomeCollection-class
+#' @rdname RepeatEpigenomeCollection-class
+#' @author Fabian Mueller
+#' @exportClass RepeatEpigenomeCollection
 setClass("RepeatEpigenomeCollection",
 	slots = list(
 		annot="data.frame",
@@ -92,6 +134,13 @@ setMethod("initialize", "RepeatEpigenomeCollection",
 	}
 )
 
+#' RepeatEpigenomeCollection Constructor
+#' 
+#' @param quantFns	      Vector of filenames which contains quantification results
+#' @name RepeatEpigenomeCollection
+#' @rdname RepeatEpigenomeCollection-class
+#' @author Fabian Mueller
+#' @export
 RepeatEpigenomeCollection <- function(quantFns, sampleNames, markNames, annot, repRef=RepeatReference()){
 	obj <- new("RepeatEpigenomeCollection",
 		quantFns, sampleNames, markNames, annot, repRef
@@ -113,6 +162,20 @@ setMethod("show", "RepeatEpigenomeCollection",
 )
 
 if (!isGeneric("getSamples")) setGeneric("getSamples", function(.Object, ...) standardGeneric("getSamples"))
+#' getSamples-methods
+#'
+#' Return the sample indentifiers contained in the dataset
+#'
+#' @param .Object \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param marks   Optionally specify the the marks which a sample needs to cover in order to be retrieved.
+#' @return Character vector specifying the sample identifiers
+#'
+#' @rdname getSamples-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getSamples
+#' @aliases getSamples,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
 setMethod("getSamples", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object, marks=NULL){
 		sns <- .Object@samples
@@ -126,18 +189,57 @@ setMethod("getSamples", signature(.Object="RepeatEpigenomeCollection"),
 	}
 )
 if (!isGeneric("getMarks")) setGeneric("getMarks", function(.Object) standardGeneric("getMarks"))
+#' getMarks-methods
+#'
+#' Return the epigenetic marks contained in the dataset
+#'
+#' @param .Object \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @return Character vector specifying the epigenetic marks contained in the dataset
+#'
+#' @rdname getMarks-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getMarks
+#' @aliases getMarks,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
 setMethod("getMarks", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object){
 		return(.Object@marks)
 	}
 )
 if (!isGeneric("getAnnot")) setGeneric("getAnnot", function(.Object) standardGeneric("getAnnot"))
+#' getAnnot-methods
+#'
+#' Return the sample sample annotation table
+#'
+#' @param .Object \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @return Sample annotation as \code{data.frame}
+#'
+#' @rdname getAnnot-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getAnnot
+#' @aliases getAnnot,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
 setMethod("getAnnot", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object){
 		return(.Object@annot)
 	}
 )
 if (!isGeneric("getSampleMarkTable")) setGeneric("getSampleMarkTable", function(.Object) standardGeneric("getSampleMarkTable"))
+#' getSampleMarkTable-methods
+#'
+#' Return a table containing sample-mark combinations covered in the dataset
+#'
+#' @param .Object \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @return Logical matrix of dimension numSamples X numMarks indicating whether a given sample-mark combination is covered
+#'
+#' @rdname getSampleMarkTable-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getSampleMarkTable
+#' @aliases getSampleMarkTable,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
 setMethod("getSampleMarkTable", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object){
 		sns <- .Object@samples
@@ -152,6 +254,19 @@ setMethod("getSampleMarkTable", signature(.Object="RepeatEpigenomeCollection"),
 	}
 )
 if (!isGeneric("getRepRef")) setGeneric("getRepRef", function(.Object) standardGeneric("getRepRef"))
+#' getRepRef-methods
+#'
+#' Return the reference repeat object
+#'
+#' @param .Object \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @return The repeat reference as \code{\linkS4class{RepeatReference}} object
+#'
+#' @rdname getRepRef-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getRepRef
+#' @aliases getRepRef,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
 setMethod("getRepRef", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object){
 		return(.Object@repRef)
@@ -159,6 +274,24 @@ setMethod("getRepRef", signature(.Object="RepeatEpigenomeCollection"),
 )
 
 if (!isGeneric("getRepeatScores")) setGeneric("getRepeatScores", function(.Object, ...) standardGeneric("getRepeatScores"))
+#' getRepeatScores-methods
+#'
+#' Retrieve values of epigenetic quantifications for each RE in each sample
+#'
+#' @param .Object          \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param mark             Epigenetic mark for which the score information is retrieved
+#' @param dropEmptySamples Logical indicating whether samples in which the mark is not present should be dropped
+#' @param minCpGcov        [\code{DNAmeth} only] number of reads covering each CpG in order for it to be considered in the
+#'                         mean methylation level
+#' @return A matrix of dimension numRE X numSamples containing scores. Scores are mean methylation levels for DNA methylation and 
+#'         log2 of the fold change for enrichment based methods.
+#'
+#' @rdname getRepeatScores-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getRepeatScores
+#' @aliases getRepeatScores,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
 setMethod("getRepeatScores", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object, mark, dropEmptySamples=FALSE, minCpGcov=getConfigElement("meth.minCpGcov")){
 		if (!is.element(mark, getMarks(.Object))){
@@ -212,6 +345,25 @@ setMethod("getRepeatScores", signature(.Object="RepeatEpigenomeCollection"),
 )
 
 if (!isGeneric("getRepeatCovg")) setGeneric("getRepeatCovg", function(.Object, ...) standardGeneric("getRepeatCovg"))
+#' getRepeatCovg-methods
+#'
+#' Retrieve the number of reads covering each RE in each sample
+#'
+#' @param .Object          \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param mark             Epigenetic mark for which the coverage information is retrieved
+#' @param dropEmptySamples Logical indicating whether samples in which the mark is not present should be dropped
+#' @param type             Coverage type. Should be one of the following:
+#'                         \code{"numReads"}: [default] number of reads covering a RE
+#'                         \code{"maxCpGcov"}: [\code{DNAmeth} only] maximum number of reads covering a single CpG
+#'                         \code{"numInstances"}: [\code{DNAmeth} from genome methylation calls only] number of repeat instances in the genome
+#' @return A matrix of dimension numRE X numSamples containing coverage values
+#'
+#' @rdname getRepeatCovg-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getRepeatCovg
+#' @aliases getRepeatCovg,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
 setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object, mark, dropEmptySamples=FALSE, type="numReads"){
 		if (!is.element(mark, getMarks(.Object))){
@@ -275,7 +427,8 @@ setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 # for methylation, not all reads covering the repeat might have CpG information
 # for ChIPseq the coverage might be 0 for either the input or the chip
 
-#' filterRepRefMeth
+if (!isGeneric("filterRepRefMeth")) setGeneric("filterRepRefMeth", function(.Object, ...) standardGeneric("filterRepRefMeth"))
+#' filterRepRefMeth-methods
 #'
 #' Given a \code{\linkS4class{RepeatEpigenomeCollection}} object, remove repeats that do not fulfill
 #' the coverage criteria in any sample
@@ -289,9 +442,12 @@ setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 #' @details
 #' A repeat must fulfill the criteria in all samples in order to be retained
 #'
+#' @rdname filterRepRefMeth-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases filterRepRefMeth
+#' @aliases filterRepRefMeth,RepeatEpigenomeCollection-method
 #' @author Fabian Mueller
-#' @noRd
-if (!isGeneric("filterRepRefMeth")) setGeneric("filterRepRefMeth", function(.Object, ...) standardGeneric("filterRepRefMeth"))
+#' @export
 setMethod("filterRepRefMeth", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object,  minReads=getConfigElement("plotRepTree.meth.minReads"), minCpGs=getConfigElement("plotRepTree.meth.minCpGs"), minCpGcov=getConfigElement("meth.minCpGcov")){
 		res <- .Object
@@ -356,7 +512,8 @@ setMethod("filterRepRefMeth", signature(.Object="RepeatEpigenomeCollection"),
 	}
 )
 
-#' filterRepRefChip
+if (!isGeneric("filterRepRefChip")) setGeneric("filterRepRefChip", function(.Object, ...) standardGeneric("filterRepRefChip"))
+#' filterRepRefChip-methods
 #'
 #' Given a \code{\linkS4class{RepeatEpigenomeCollection}} object, remove repeats that do not fulfill
 #' the coverage criteria in any sample
@@ -368,9 +525,12 @@ setMethod("filterRepRefMeth", signature(.Object="RepeatEpigenomeCollection"),
 #' @details
 #' A repeat must fulfill the criteria in all samples in order to be retained
 #'
+#' @rdname filterRepRefChip-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases filterRepRefChip
+#' @aliases filterRepRefChip,RepeatEpigenomeCollection-method
 #' @author Fabian Mueller
-#' @noRd
-if (!isGeneric("filterRepRefChip")) setGeneric("filterRepRefChip", function(.Object, ...) standardGeneric("filterRepRefChip"))
+#' @export
 setMethod("filterRepRefChip", signature(.Object="RepeatEpigenomeCollection"),
 	function(.Object,  minReads=getConfigElement("plotRepTree.meth.minReads")){
 		res <- .Object

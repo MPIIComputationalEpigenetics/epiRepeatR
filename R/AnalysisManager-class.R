@@ -880,7 +880,7 @@ readFileTable <- function(fName, groupColumns=c()) {
 #' gets the annotation from all columns which don't have only unique or only identical values
 #'
 #' @author Fabian Mueller
-#' @noRd
+#' @export
 getSampleGroups <- function(anno, addAll=FALSE, addIndividual=FALSE) {
 	res <- list()
 	for (j in 1:ncol(anno)){

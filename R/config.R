@@ -16,8 +16,10 @@
 .config$tempDir <- tempdir()
 .config$inputBam.mappingStatus <- "all"
 .config$plotRepTree.dendroMethod <- "repeatFamily"
+.config$plotRepTree.normEnrich <- "none"
 .config$plotRepTree.meth.minCpGs  <- 2
 .config$plotRepTree.meth.minReads <- 100
+.config$annotCols.replicates <- NULL
 .config$meth.minCpGcov  <- 5 #NULL
 .config$genomeRepeatTrack <- NULL
 .config$debug <- FALSE
@@ -70,14 +72,35 @@
 #'        Only reads also mapped in the source bam file ("mapped"), only reads unmapped in the source bam file ("unmapped"),
 #'        or both ("all", default).
 #'   }
+#'   \item{\bold{\code{plotRepTree.dendroMethod}}\code{ = "repeatFamily"}}{
+#'         Method for plotting the repeat subfamily dendrogram. Valid methods include 
+#'                  grouping by repeat subfamily ("repeatFamily"),
+#'                  grouping by hierarchical clustering based on k-mer counts in the repeat sequence (Euclidean distance, complete linkage) ("hierClust"),
+#'                  grouping by hierarchical clustering based on occurrences of terms in the annotation fields of a repeat 
+#'                  ("annotClust"; requires that the repeat references has been annotated from the EMBL format.)
+#'   }
+#'   \item{\bold{\code{plotRepTree.normEnrich}}\code{ = "none"}}{
+#'        Method for normalizing enrichment data before plotting. Currently supported are:
+#'               \code{none} (no normalization),
+#'               \code{standard} (subtract the mean, devide by standard deviation),
+#'               \code{scale} (scale to the interval [0,1]) and
+#'               \code{quantile} (Quantile normalization)
+#'   }
 #'   \item{\bold{\code{plotRepTree.meth.minCpGs}}\code{ = 2}}{
 #'        Minimum number of CpGs to be contained in a repeat element in order to be shown in the resulting methylation tree plots.
 #'   }
 #'   \item{\bold{\code{plotRepTree.meth.minReads}}\code{ = 100}}{
 #'        Minimum number of reads that must match to a given repeat element in order to be shown in the resulting methylation tree plots.
 #'   }
+#'   \item{\bold{\code{annotCols.replicates}}\code{ = NULL}}{
+#'        Column names or indices in the annotation column used for replicate analysis (in exploratory report)
+#'   }
 #'   \item{\bold{\code{meth.minCpGcov}}\code{ = 5}}{
 #'        Minimum number of reads covering a CpG in a repeat element in order to be considered in computing methylation.
+#'   }
+#'   \item{\bold{\code{genomeRepeatTrack}}\code{ = NULL}}{
+#'      Path to an RDS file containing a GenomeRepeatTrack object. These files are used to map the sequencing reads instead of the consensus reference.
+#'      Only meaningful if processing input files of type \code{genomeMethCalling} or \code{genomeAlignment}.
 #'   }
 #'   \item{\bold{\code{debug}}\code{ = FALSE}}{
 #'        \code{Logical specifying whether the debug mode is enabled and additional debug-related output should be provided.}
@@ -98,6 +121,9 @@ setConfigElement <- function(name, value){
 #' @author Fabian Mueller
 #' @export
 getConfigElement <- function(name){
+	if (!exists(name, .config)){
+		logger.warning(c("No such configuration element:", name, "--> NULL returned"))
+	}
 	.config[[name]]
 }
 #' saveConfig

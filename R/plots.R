@@ -292,8 +292,8 @@ createRepPlot_groupSummaryTrees_meth <- function(
 #'
 #' @param .obj	            \code{\linkS4class{RepeatEpigenomeCollection}} object
 #' @param plotDir			Output directory where the plots are saved to
-#' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
-#' @param normChipMethod    method for normalizing ChIP enrichment scores per mark. See \code{normalizeMatrix} class for possible values. 
+#' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{\linkS4class{RepeatTree-class}} class for possible values.
+#' @param normChipMethod    method for normalizing ChIP enrichment scores per mark. See \code{\link{normalizeMatrix}} for possible values. 
 #' @param minReads			filtering parameter: specify the minimum number of reads that must match to a given repeat element in order for the repeat to be added to the plot
 #' @param minCpGs			filtering parameter: specify the minimum number of CpG that must be contained in a given repeat element in order for the repeat to be added to the plot
 #' @param minCpGcov			filtering parameter: specify the minimum number of reads that must cover a given CpG in order to be considered a valid methylation measurement
