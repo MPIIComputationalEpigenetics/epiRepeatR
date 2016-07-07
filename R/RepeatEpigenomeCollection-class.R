@@ -36,6 +36,32 @@ setClassUnion("ListOrNULL", c("list", "NULL"))
 #'   \item{\code{\link{getSamples,RepeatEpigenomeCollection-method}}}{
 #'       Return the sample indentifiers contained in the dataset.
 #'   }
+#'   \item{\code{\link{getMarks,RepeatEpigenomeCollection-method}}}{
+#'       Return the epigenetic marks contained in the dataset.
+#'   }
+#'   \item{\code{\link{getAnnot,RepeatEpigenomeCollection-method}}}{
+#'       Return the sample sample annotation table.
+#'   }
+#'   \item{\code{\link{getSampleMarkTable,RepeatEpigenomeCollection-method}}}{
+#'       Return a table containing sample-mark combinations covered in the dataset.
+#'   }
+#'   \item{\code{\link{getRepRef,RepeatEpigenomeCollection-method}}}{
+#'       Retrieve values of epigenetic quantifications for each RE in each sample.
+#'   }
+#'   \item{\code{\link{getRepeatScores,RepeatEpigenomeCollection-method}}}{
+#'       Return the sample indentifiers contained in the dataset.
+#'   }
+#'   \item{\code{\link{getRepeatCovg,RepeatEpigenomeCollection-method}}}{
+#'       Retrieve the number of reads covering each RE in each sample.
+#'   }
+#'   \item{\code{\link{filterRepRefMeth,RepeatEpigenomeCollection-method}}}{
+#'       Filter RE that do not fulfill certain coverage criteria in all of the contained
+#'       bisulfite datasets.
+#'   }
+#'   \item{\code{\link{filterRepRefChip,RepeatEpigenomeCollection-method}}}{
+#'       Filter RE that do not fulfill certain coverage criteria in all of the contained
+#'       enrichment datasets.
+#'   }
 #' }
 #'
 #' @name RepeatEpigenomeCollection-class
@@ -587,24 +613,3 @@ setMethod("filterRepRefChip", signature(.Object="RepeatEpigenomeCollection"),
 		return(res)
 	}
 )
-
-################################################################################
-# Sandbox
-################################################################################
-if (FALSE){
-anaDir <- "/DEEP_fhgfs/projects/fmueller/repeatEpigenetics/epiRepeatR/analysis/deepBlood_v02mergedInput"
-am <- readRDS(file.path(anaDir, "config", "anaMan.rds"))
-
-inFileTable <- read.table(file.path(anaDir, "config", "plotRepeatMarkTree_inputFiles.tsv"), sep="\t", comment.char="", header=TRUE, stringsAsFactors=FALSE)
-
-quantFns <- inFileTable[,"fileName"]
-sampleNames <- inFileTable[,"sampleName"]
-markNames <- inFileTable[,"markName"]
-annot <- getSampleAnnot(am)
-
-rec <- RepeatEpigenomeCollection(quantFns, sampleNames, markNames, annot)
-# mark <- "H3K9me3"
-mark <- "DNAmeth"
-sm <- getRepeatScores(rec, mark)
-cm <- getRepeatCovg(rec, mark)
-}

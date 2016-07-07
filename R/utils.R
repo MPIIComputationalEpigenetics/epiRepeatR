@@ -322,6 +322,54 @@ getReadStatsFromSample <- function(bamFn, frac=0.001){
 	return(res)
 }
 
+#' getAlnStats
+#'
+#' Retrieve a table of alignment statistics for pair of repeat alignment and
+#' backgound BAM files
+#'
+#' @param bamFn.aln   bam file for the repeat alignment
+#' @param bamFn.unaln bam file for the background (typically the BAM file containing all reads
+#'                    that is the basis of alignment)
+#' @return a data.frame containing read statistics:
+#' \item{totalReads}{Total number of reads in the background BAM file}
+#' \item{mappedReads}{Number of reads mapped to the repeat reference}
+#' \item{mappingRate}{mappedReads/totalReads}
+#' \item{readLengthAlnMin}{Minimum length of reads aligned to the repeat referce}
+#' \item{readLengthAlnMax}{Maximum length of reads aligned to the repeat referce}
+#' \item{readLengthAlnMedian}{Median length of reads aligned to the repeat referce}
+#' \item{readLengthAllMin}{Minimum length of reads in the background BAM file}
+#' \item{readLengthAllMax}{Maximum length of reads in the background BAM file}
+#' \item{readLengthAllMedian}{Median length of reads in the background BAM file}
+#' \item{pairedRateAln}{Percentage of paired reads aligned to the repeat referce}
+#' \item{pairedRateAll}{Percentage of paired reads in the background BAM file}
+#'
+#' @author Fabian Mueller
+#' @noRd
+getAlnStats <- function(bamFn.aln, bamFn.unaln){
+	ra <- RepeatAlignment(bamFn.aln)
+	rcl.aln <- getReadCounts(ra, useIdxStats=TRUE, addGlobalCounts=TRUE)
+
+	rc.mapped <- attr(rcl.aln, "global")[[".mapped"]]
+	rc.total <- countAllReads.bam(bamFn.unaln)
+
+	readStats.aln <- getReadStatsFromSample(bamFn.aln)
+	readStats.unaln <- getReadStatsFromSample(bamFn.unaln)
+	res <- data.frame(
+		totalReads=rc.total,
+		mappedReads=rc.mapped,
+		mappingRate=rc.mapped/rc.total,
+		readLengthAlnMin    = as.numeric(readStats.aln$readLength.summary["Min."]),
+		readLengthAlnMax    = as.numeric(readStats.aln$readLength.summary["Max."]),
+		readLengthAlnMedian = as.numeric(readStats.aln$readLength.summary["Median"]),
+		readLengthAllMin    = as.numeric(readStats.unaln$readLength.summary["Min."]),
+		readLengthAllMax    = as.numeric(readStats.unaln$readLength.summary["Max."]),
+		readLengthAllMedian = as.numeric(readStats.unaln$readLength.summary["Median"]),
+		pairedRateAln       = readStats.aln$flagRates["read_paired"],
+		pairedRateAll       = readStats.unaln$flagRates["read_paired"]
+	)
+	return(res)
+}
+
 
 #' plotRepeatAlignmentStats
 #'

@@ -1,6 +1,42 @@
 setClassUnion("BamFileOrNULL", c("BamFile", "NULL"))
 setClassUnion("ListOrNULL", c("list", "NULL"))
 
+#' RepeatAlignment Class
+#'
+#' A general class for storing reads mapped to a reference of repetitive elements
+#'
+#' @section Slots:
+#' \describe{
+#'   \item{\code{bamFo}}{
+#'       a \code{BamFile} object corresponding to the alignment of reads to a reference
+#'       of repetitive elements
+#'   }
+#'   \item{\code{reference}}{
+#'       File name of the reference of REs (fasta file)
+#'   }
+#'   \item{\code{readCounts}}{
+#'       List storing statistics of reads mapped to each reference RE.
+#'   } 
+#' }
+#'
+#' @section Methods:
+#' \describe{
+#'   \item{\code{\link{getReadCounts,RepeatAlignment-method}}}{
+#'       Return statistics of reads mapped to each reference RE
+#'   }
+#'   \item{\code{\link{storeReadCounts,RepeatAlignment-method}}}{
+#'       Stored statistics of reads mapped to each reference RE in the object.
+#'   }
+#'   \item{\code{\link{resetReadCounts,RepeatAlignment-method}}}{
+#'       Reset statistics of reads mapped to each reference RE in the object.
+#'   }
+#' }
+#'
+#' @name RepeatAlignment-class
+#' @rdname RepeatAlignment-class
+#' @author Fabian Mueller
+#' @noRd
+## @exportClass RepeatAlignment
 setClass("RepeatAlignment",
 	slots = list(
 		bamFo = "BamFile",
@@ -25,6 +61,17 @@ setMethod("initialize", "RepeatAlignment",
 		.Object
 	}
 )
+
+#' RepeatAlignment Constructor
+#' 
+#' @param bamFile	Filename of the BAM file containing the reads aligned to the
+#'                  reference of repetitive elements
+#' @param reference Filename of the reference of REs (FASTA file)
+#' @name RepeatAlignment
+#' @rdname RepeatAlignment-class
+#' @author Fabian Mueller
+#' @noRd
+## @export
 RepeatAlignment <- function(bamFile, reference=.config$refFasta){
 	obj <- new("RepeatAlignment",
 		bamFile, reference
@@ -33,6 +80,22 @@ RepeatAlignment <- function(bamFile, reference=.config$refFasta){
 }
 
 if (!isGeneric("getReadCounts")) setGeneric("getReadCounts", function(.obj, ...) standardGeneric("getReadCounts"))
+#' getReadCounts-methods
+#'
+#' Return the sample indentifiers contained in the dataset
+#'
+#' @param .obj            \code{\linkS4class{RepeatAlignment}} object
+#' @param useIdxStats     Optionally specify the the marks which a sample needs to cover in order to be retrieved.
+#' @param addGlobalCounts  
+#' @return Character vector specifying the sample identifiers
+#'
+#' @rdname getReadCounts-RepeatAlignment-method
+#' @docType methods
+#' @aliases getReadCounts
+#' @aliases getReadCounts,RepeatAlignment-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("getReadCounts", signature(.obj="RepeatAlignment"),
 	function(.obj, useIdxStats=FALSE, addGlobalCounts=TRUE){
 		if (is.null(.obj@readCounts)){
@@ -92,6 +155,21 @@ setMethod("getReadCounts", signature(.obj="RepeatAlignment"),
 	}
 )
 if (!isGeneric("storeReadCounts")) setGeneric("storeReadCounts", function(.obj, ...) standardGeneric("storeReadCounts"))
+#' storeReadCounts-methods
+#'
+#' Calls \code{\link{getReadCounts,RepeatAlignment-method}} and stores this information in the \code{\linkS4class{RepeatAlignment}}
+#'
+#' @param .obj    \code{\linkS4class{RepeatAlignment}} object
+#' @param ...     arguments passed to \code{\link{getReadCounts,RepeatAlignment-method}}
+#' @return modified \code{\linkS4class{RepeatAlignment}} object
+#'
+#' @rdname storeReadCounts-RepeatAlignment-method
+#' @docType methods
+#' @aliases storeReadCounts
+#' @aliases storeReadCounts,RepeatAlignment-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("storeReadCounts", signature(.obj="RepeatAlignment"),
 	function(.obj, ...){
 		.obj@readCounts <- getReadCounts(.obj, ...)
@@ -99,6 +177,20 @@ setMethod("storeReadCounts", signature(.obj="RepeatAlignment"),
 	}
 )
 if (!isGeneric("resetReadCounts")) setGeneric("resetReadCounts", function(.obj, ...) standardGeneric("resetReadCounts"))
+#' resetReadCounts-methods
+#'
+#' Reset the read counts in an \code{\linkS4class{RepeatAlignment}} object
+#'
+#' @param .obj    \code{\linkS4class{RepeatAlignment}} object
+#' @return modified \code{\linkS4class{RepeatAlignment}} object
+#'
+#' @rdname resetReadCounts-RepeatAlignment-method
+#' @docType methods
+#' @aliases resetReadCounts
+#' @aliases resetReadCounts,RepeatAlignment-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("resetReadCounts", signature(.obj="RepeatAlignment"),
 	function(.obj){
 		.obj@readCounts <- NULL
@@ -106,9 +198,40 @@ setMethod("resetReadCounts", signature(.obj="RepeatAlignment"),
 	}
 )
 
+################################################################################
+#' RepeatAlignmentBiSeq Class
+#'
+#' Daughter class of \code{\linkS4class{RepeatAlignment}} for
+#' bisulfite sequencing reads mapped to a reference of repetitive elements
+#'
+#' @section Slots: see \code{\linkS4class{RepeatAlignment}}
+#'
+#' @section Methods:
+#' \describe{
+#'   \item{\code{\link{getMethylationCalls,RepeatAlignmentBiSeq-method}}}{
+#'       For each RE in the reference compute the methylation levels in each CpG
+#'       as well as read statistics
+#'   }
+#' }
+#'
+#' @name RepeatAlignmentBiSeq-class
+#' @rdname RepeatAlignmentBiSeq-class
+#' @author Fabian Mueller
+#' @noRd
+## @exportClass RepeatAlignmentBiSeq
 setClass("RepeatAlignmentBiSeq",
 	contains="RepeatAlignment"
 )
+#' RepeatAlignmentBiSeq Constructor
+#' 
+#' @param bamFile	Filename of the BAM file containing the reads aligned to the
+#'                  reference of repetitive elements
+#' @param reference Filename of the reference of REs (FASTA file)
+#' @name RepeatAlignmentBiSeq
+#' @rdname RepeatAlignmentBiSeq-class
+#' @author Fabian Mueller
+#' @noRd
+## @export
 RepeatAlignmentBiSeq <- function(bamFile, reference=.config$refFasta){
 	obj <- new("RepeatAlignmentBiSeq",
 		bamFile, reference
@@ -117,6 +240,23 @@ RepeatAlignmentBiSeq <- function(bamFile, reference=.config$refFasta){
 }
 
 if (!isGeneric("getMethylationCalls")) setGeneric("getMethylationCalls", function(.obj, ...) standardGeneric("getMethylationCalls"))
+#' getMethylationCalls-methods
+#'
+#' Get methylation calls for each CpG in each RE along with read statistics
+#'
+#' @param .obj        \code{\linkS4class{RepeatAlignmentBiSeq}} object
+#' @param minBaseQual minumum base quality for a read at the CpG position to be considered in methylation calling
+#' @return \code{RepeatMethCalls} object (S3 object). Essentially a list containing a data.frame with methylation calls
+#'         (containing position along with methylation, unmethylation and total counts) as well as the total number of reads mapping
+#'         to each RE and the number of reads considered in methylation calling
+#'
+#' @rdname getMethylationCalls-RepeatAlignmentBiSeq-method
+#' @docType methods
+#' @aliases getMethylationCalls
+#' @aliases getMethylationCalls,RepeatAlignmentBiSeq-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("getMethylationCalls", signature(.obj="RepeatAlignmentBiSeq"),
 	function(.obj, minBaseQual=30){
 		bf <- .obj@bamFo
@@ -199,12 +339,39 @@ setMethod("getMethylationCalls", signature(.obj="RepeatAlignmentBiSeq"),
 		return(res)
 	}
 )
-#example:
-#ss <- "LTR2752"
-
+################################################################################
+#' RepeatAlignmentChip Class
+#'
+#' Daughter class of \code{\linkS4class{RepeatAlignment}} for
+#' reads from enrichment-based experiments mapped to a reference of repetitive elements
+#'
+#' @section Slots: see \code{\linkS4class{RepeatAlignment}}
+#'
+#' @section Methods:
+#' \describe{
+#'   \item{\code{\link{computeEnrichment,RepeatAlignmentChip-method}}}{
+#'       Compute the enrichment over Input/WCE for each RE in the reference
+#'   }
+#' }
+#'
+#' @name RepeatAlignmentChip-class
+#' @rdname RepeatAlignmentChip-class
+#' @author Fabian Mueller
+#' @noRd
+## @exportClass RepeatAlignmentChip
 setClass("RepeatAlignmentChip",
 	contains="RepeatAlignment"
 )
+#' RepeatAlignmentChip Constructor
+#' 
+#' @param bamFile	Filename of the BAM file containing the reads aligned to the
+#'                  reference of repetitive elements
+#' @param reference Filename of the reference of REs (FASTA file)
+#' @name RepeatAlignmentChip
+#' @rdname RepeatAlignmentChip-class
+#' @author Fabian Mueller
+#' @noRd
+## @export
 RepeatAlignmentChip <- function(bamFile, reference=.config$refFasta){
 	obj <- new("RepeatAlignmentChip",
 		bamFile,reference
@@ -212,6 +379,25 @@ RepeatAlignmentChip <- function(bamFile, reference=.config$refFasta){
 	return(obj)
 }
 if (!isGeneric("computeEnrichment")) setGeneric("computeEnrichment", function(.obj, inputObj, ...) standardGeneric("computeEnrichment"))
+#' computeEnrichment-methods
+#'
+#' Given another \code{\linkS4class{RepeatAlignmentChip}} object for the Input/WCE, compute the enrichment of the ChIP
+#' experiment over the imput for each reference RE
+#'
+#' @param .obj        \code{\linkS4class{RepeatAlignmentChip}} object
+#' @param inputObj    \code{\linkS4class{RepeatAlignmentChip}} object for the Input/WCE
+#' @param ...          Arguments passed to \code{storeReadCounts,RepeatAlignment-method}
+#' @return \code{RepeatReadEnrichment} object (S3 object). Essentially a list containing the fold change (enrichment) over input,
+#'         log2 of that fold change and the number of reads mapping to element in the ChIP and Input experiments
+#'         for each RE in the reference
+#'
+#' @rdname computeEnrichment-RepeatAlignmentChip-method
+#' @docType methods
+#' @aliases computeEnrichment
+#' @aliases computeEnrichment,RepeatAlignmentChip-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("computeEnrichment", signature(.obj="RepeatAlignmentChip", inputObj="RepeatAlignment"),
 	function(.obj, inputObj, ...){
 		eps <- 1e-6
@@ -247,115 +433,3 @@ setMethod("computeEnrichment", signature(.obj="RepeatAlignmentChip", inputObj="R
 		return(res)
 	}
 )
-
-################################################################################
-# helper functions to display alignments
-################################################################################
-expandReadSeqFromCigar <- function(readS,readCigar){
-	cigarLen <- as.integer(unlist(strsplit(readCigar,"[MDI]")))
-	cigarInstr <- unlist(strsplit(readCigar,"[[:digit:]]+"))
-	cigarInstr <- cigarInstr[2:length(cigarInstr)]
-	posStart <- 0
-	posEnd   <- 0
-	res <- ""
-	for (i in 1:length(cigarInstr)){
-		if (is.element(cigarInstr[i],c("M","I"))){
-			posStart <- posEnd + 1
-			posEnd   <- posEnd + cigarLen[i]
-			res <- paste0(res, substr(readS, posStart, posEnd))
-		} else if (is.element(cigarInstr[i],c("D"))){
-			res <- paste0(res, paste(rep("-",cigarLen[i]),collapse=""))
-		}
-	}
-	return(res)
-}
-expandRefSeqFromCigar <- function(refS, mapPos, readCigar){
-	cigarLen <- as.integer(unlist(strsplit(readCigar,"[MDI]")))
-	cigarInstr <- unlist(strsplit(readCigar,"[[:digit:]]+"))
-	cigarInstr <- cigarInstr[2:length(cigarInstr)]
-	posStart <- mapPos - 1
-	posEnd   <- mapPos - 1
-	res <- ""
-	for (i in 1:length(cigarInstr)){
-		if (is.element(cigarInstr[i],c("M","D"))){
-			posStart <- posEnd + 1
-			posEnd   <- posEnd + cigarLen[i]
-			res <- paste0(res, substr(refS, posStart, posEnd))
-		} else if (is.element(cigarInstr[i],c("I"))){
-			res <- paste0(res, paste(rep("-",cigarLen[i]),collapse=""))
-		}
-	}
-	return(res)
-}
-getMatchStr <- function(s1,s2,bisulfite=FALSE){
-	if (nchar(s1)!=nchar(s2)) stop("Strings of unequal lengths encountered")
-	s1vec <- unlist(strsplit(s1,""))
-	s2vec <- unlist(strsplit(s2,""))
-	res <- rep(" ",length(s1vec))
-	res[s1vec==s2vec] <- "|"
-	if (bisulfite){
-		res[s1vec=="C" & s2vec=="C"] <- "M"
-		res[s1vec=="T" & s2vec=="C"] <- "U"
-	}
-	res <- paste(res,collapse="")
-	return(res)
-}
-printAln <- function(reads, refSeqs){
-	sepLine <- paste(rep("#",80),collapse="")
-	subSepLine <- paste(rep("-",80),collapse="")
-	for (i in 1:length(reads$qname)){
-		readS <- as.character(reads$seq[[i]])
-		refS <- as.character(refSeqs[[as.character(reads$rname[i])]])
-		readCigar <- reads$cigar[i]
-		readSex <- expandReadSeqFromCigar(readS,readCigar)
-		refSex  <- expandRefSeqFromCigar(refS, reads$pos[i], readCigar)
-		matchS <- getMatchStr(readSex,refSex)
-		cat(paste0(
-			sepLine,"\n",
-			reads$qname[i], " (",as.character(reads$strand[i]),")","\n",
-			subSepLine,"\n",
-			"READ: ",readSex,"\n",
-			"      ",matchS,"\n",
-			"REF:  ",refSex,"\n",
-			sepLine,"\n"
-		))
-	}
-	invisible(NULL)
-}
-
-getAlnStats <- function(bamFn.aln, bamFn.unaln){
-	ra <- RepeatAlignment(bamFn.aln)
-	rcl.aln <- getReadCounts(ra, useIdxStats=TRUE, addGlobalCounts=TRUE)
-
-	rc.mapped <- attr(rcl.aln, "global")[[".mapped"]]
-	rc.total <- countAllReads.bam(bamFn.unaln)
-
-	readStats.aln <- getReadStatsFromSample(bamFn.aln)
-	readStats.unaln <- getReadStatsFromSample(bamFn.unaln)
-	res <- data.frame(
-		totalReads=rc.total,
-		mappedReads=rc.mapped,
-		mappingRate=rc.mapped/rc.total,
-		readLengthAlnMin    = as.numeric(readStats.aln$readLength.summary["Min."]),
-		readLengthAlnMax    = as.numeric(readStats.aln$readLength.summary["Max."]),
-		readLengthAlnMedian = as.numeric(readStats.aln$readLength.summary["Median"]),
-		readLengthAllMin    = as.numeric(readStats.unaln$readLength.summary["Min."]),
-		readLengthAllMax    = as.numeric(readStats.unaln$readLength.summary["Max."]),
-		readLengthAllMedian = as.numeric(readStats.unaln$readLength.summary["Median"]),
-		pairedRateAln       = readStats.aln$flagRates["read_paired"],
-		pairedRateAll       = readStats.unaln$flagRates["read_paired"]
-	)
-	return(res)
-}
-
-# #example
-# refSeqs <- getDNAStringForReference(.config$refFasta)
-# refInfo <- getReferenceInfo(reference)
-# refNames <- refInfo[,"id"]
-# names(refSeqs) <- refNames
-# ss <- "L1MD3"
-# sbWhat <- scanBamWhat()
-# sbWhich <- RangesList(a=IRanges(1,alnTargetLengths[ss]))
-# names(sbWhich)[1] <- ss
-# rrs <- scanBam(bf, param=ScanBamParam(what=sbWhat,which=sbWhich))
-# printAln(rrs[[1]],refSeqs)

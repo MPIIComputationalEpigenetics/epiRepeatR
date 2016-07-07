@@ -52,6 +52,32 @@ scores for each mark. A dataset of multiple samples can be annotated.
   \item{\code{\link{getSamples,RepeatEpigenomeCollection-method}}}{
       Return the sample indentifiers contained in the dataset.
   }
+  \item{\code{\link{getMarks,RepeatEpigenomeCollection-method}}}{
+      Return the epigenetic marks contained in the dataset.
+  }
+  \item{\code{\link{getAnnot,RepeatEpigenomeCollection-method}}}{
+      Return the sample sample annotation table.
+  }
+  \item{\code{\link{getSampleMarkTable,RepeatEpigenomeCollection-method}}}{
+      Return a table containing sample-mark combinations covered in the dataset.
+  }
+  \item{\code{\link{getRepRef,RepeatEpigenomeCollection-method}}}{
+      Retrieve values of epigenetic quantifications for each RE in each sample.
+  }
+  \item{\code{\link{getRepeatScores,RepeatEpigenomeCollection-method}}}{
+      Return the sample indentifiers contained in the dataset.
+  }
+  \item{\code{\link{getRepeatCovg,RepeatEpigenomeCollection-method}}}{
+      Retrieve the number of reads covering each RE in each sample.
+  }
+  \item{\code{\link{filterRepRefMeth,RepeatEpigenomeCollection-method}}}{
+      Filter RE that do not fulfill certain coverage criteria in all of the contained
+      bisulfite datasets.
+  }
+  \item{\code{\link{filterRepRefChip,RepeatEpigenomeCollection-method}}}{
+      Filter RE that do not fulfill certain coverage criteria in all of the contained
+      enrichment datasets.
+  }
 }
 }
 \author{
