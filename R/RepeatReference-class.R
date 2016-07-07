@@ -1,5 +1,41 @@
 setClassUnion("ListOrNULL", c("list", "NULL"))
 
+#' RepeatReference Class
+#'
+#' A class for storing annotation on the reference of repetitive elements (REs)
+#' 
+#' @section Slots:
+#' \describe{
+#'   \item{\code{reference}}{
+#'       File name of the reference of REs (fasta file)
+#'   }
+#'   \item{\code{repeatInfo}}{
+#'       data.frame containing annotation (columns) for each RE (rows).
+#'       This information is typically derived from the annotation in the
+#'       reference FASTA file.
+#'   }
+#'   \item{\code{repeatInfoList}}{
+#'       List od additional information for each RE. This information is
+#'       typically obtained from the annotaiton contained in RepBaseUpdate's
+#'       EMBL files.
+#'   }
+#'   \item{\code{sequences}}{
+#'       \code{DNAStringSet} containing sequence information for each RE.
+#'   }
+#' }
+#'
+#' @section Methods:
+#' \describe{
+#'   \item{\code{\link{getRepeatInfo,RepeatReference-method}}}{
+#'       Blubb
+#'   }
+#' }
+#'
+#' @name RepeatReference-class
+#' @rdname RepeatReference-class
+#' @author Fabian Mueller
+#' @noRd
+## @exportClass RepeatReference
 setClass("RepeatReference",
 	slots = list(
 		reference="character",
@@ -23,6 +59,14 @@ setMethod("initialize", "RepeatReference",
 	}
 )
 
+#' RepeatReference Constructor
+#' 
+#' @param reference Filename of the reference of REs (FASTA file)
+#' @name RepeatReference
+#' @rdname RepeatReference-class
+#' @author Fabian Mueller
+#' @noRd
+## @export
 RepeatReference <- function(reference=.config$refFasta){
 	obj <- new("RepeatReference",
 		reference
@@ -31,7 +75,15 @@ RepeatReference <- function(reference=.config$refFasta){
 	return(obj)
 }
 
-
+#' getDNAStringForReference
+#'
+#' given a reference FASTA file, retrieve sequence information for each RE
+#'
+#' @param reference Filename of the reference of REs (FASTA file)
+#' @return \code{DNAStringSet} object containing sequence information for each RE
+#'
+#' @author Fabian Mueller
+#' @noRd
 getDNAStringForReference <- function(reference){
 	refSeqs <- readBStringSet(reference)
 	#replace letters "x"
@@ -41,18 +93,45 @@ getDNAStringForReference <- function(reference){
 	refSeqs <- DNAStringSet(refSeqs)
 	return(refSeqs)
 }
-
+#' getReferenceInfo
+#'
+#' given a reference FASTA file, retrieve sequence annotation for each RE
+#'
+#' @param reference Filename of the reference of REs (FASTA file)
+#' @return \code{data.frame} containing annotation for each RE
+#' 
+#' @details the RE identifiers in the FASTA file are assumed to have the following format
+#' (tab separated):
+#' repeat id, repeat family, species
+#'
+#' @author Fabian Mueller
+#' @noRd
 getReferenceInfo <- function(reference){
 	refSeqs <- readBStringSet(reference)
 	seqLens <- vapply(refSeqs,length,integer(1))
 	res <- data.frame(t(data.frame(strsplit(names(refSeqs),"\t"))),seqLength=seqLens)
 	colnames(res)[1:4] <- c("id","family","species","seqLength")
-	rownames(res) <- res[,1]
 	res[,"id"] <- as.character(res[,"id"])
+	rownames(res) <- res[,1]
 	return(res)
 }
 
 if (!isGeneric("addRepeatInfoFromEmbl")) setGeneric("addRepeatInfoFromEmbl", function(.Object, ...) standardGeneric("addRepeatInfoFromEmbl"))
+#' addRepeatInfoFromEmbl-methods
+#'
+#' Add annotation contained in a RepBaseUpdate EMBL file to the reference of REs
+#'
+#' @param .Object         \code{\linkS4class{RepeatReference}} object
+#' @param emblFile        Filename of the EMBL file from which the repeat annotaiton is retrieved. Can be NULL
+#' @return modified \code{\linkS4class{RepeatReference}} object containing derived annotation
+#'
+#' @rdname addRepeatInfoFromEmbl-RepeatReference-method
+#' @docType methods
+#' @aliases addRepeatInfoFromEmbl
+#' @aliases addRepeatInfoFromEmbl,RepeatReference-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("addRepeatInfoFromEmbl", signature(.Object="RepeatReference"),
 	function(.Object, emblFile=NULL){
 		# check if there is an embl file corresponding to the reference fasta file
@@ -76,6 +155,21 @@ setMethod("addRepeatInfoFromEmbl", signature(.Object="RepeatReference"),
 )
 
 if (!isGeneric("filterRepeats_wl")) setGeneric("filterRepeats_wl", function(.Object, ...) standardGeneric("filterRepeats_wl"))
+#' filterRepeats_wl-methods
+#'
+#' discard all but the specified REs from the repeat reference
+#'
+#' @param .Object         \code{\linkS4class{RepeatReference}} object
+#' @param whitelist       identifiers or indices of REs to keep
+#' @return modified \code{\linkS4class{RepeatReference}} object
+#'
+#' @rdname filterRepeats_wl-RepeatReference-method
+#' @docType methods
+#' @aliases filterRepeats_wl
+#' @aliases filterRepeats_wl,RepeatReference-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("filterRepeats_wl", signature(.Object="RepeatReference"),
 	function(.Object, whitelist){
 		res <- .Object
@@ -90,24 +184,81 @@ setMethod("filterRepeats_wl", signature(.Object="RepeatReference"),
 # keepRepIds <- sample(rr@repeatInfo$id, 100)
 # rrf <- filterRepeats_wl(rr,keepRepIds)
 if (!isGeneric("getRepeatInfo")) setGeneric("getRepeatInfo", function(.Object) standardGeneric("getRepeatInfo"))
+#' getRepeatInfo-methods
+#'
+#' Retrieve the repeat annotation data.frame from the repeat reference
+#'
+#' @param .Object         \code{\linkS4class{RepeatReference}} object
+#' @return the \code{repeatInfo} as data.frame
+#'
+#' @rdname getRepeatInfo-RepeatReference-method
+#' @docType methods
+#' @aliases getRepeatInfo
+#' @aliases getRepeatInfo,RepeatReference-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("getRepeatInfo", signature(.Object="RepeatReference"),
 	function(.Object){
 		return(.Object@repeatInfo)
 	}
 )
 if (!isGeneric("getRepeatIds")) setGeneric("getRepeatIds", function(.Object) standardGeneric("getRepeatIds"))
+#' getRepeatIds-methods
+#'
+#' Retrieve the rpeat ids from the repeat reference
+#'
+#' @param .Object         \code{\linkS4class{RepeatReference}} object
+#' @return character vector of repeat ids
+#'
+#' @rdname getRepeatIds-RepeatReference-method
+#' @docType methods
+#' @aliases getRepeatIds
+#' @aliases getRepeatIds,RepeatReference-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("getRepeatIds", signature(.Object="RepeatReference"),
 	function(.Object){
 		return(.Object@repeatInfo[,"id"])
 	}
 )
 if (!isGeneric("getSequences")) setGeneric("getSequences", function(.Object) standardGeneric("getSequences"))
+#' getSequences-methods
+#'
+#' Retrieve the repeat sequences from the reference of REs
+#'
+#' @param .Object         \code{\linkS4class{RepeatReference}} object
+#' @return \code{DNAStringSet} containing sequence information for each RE.
+#'
+#' @rdname getSequences-RepeatReference-method
+#' @docType methods
+#' @aliases getSequences
+#' @aliases getSequences,RepeatReference-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("getSequences", signature(.Object="RepeatReference"),
 	function(.Object){
 		return(.Object@sequences)
 	}
 )
 if (!isGeneric("getKmerCounts")) setGeneric("getKmerCounts", function(.Object, ...) standardGeneric("getKmerCounts"))
+#' getKmerCounts-methods
+#'
+#' Count the number of all k-mers in the sequences of the REs
+#'
+#' @param .Object   \code{\linkS4class{RepeatReference}} object
+#' @param k         length of the resulting k-mers
+#' @return a matrix containing counts of all sequence k-mers (rows) for each RE (columns)
+#'
+#' @rdname getKmerCounts-RepeatReference-method
+#' @docType methods
+#' @aliases getKmerCounts
+#' @aliases getKmerCounts,RepeatReference-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
 setMethod("getKmerCounts", signature(.Object="RepeatReference"),
 	function(.Object, k=4L){
 		if (k<1L) stop("Invalid value for k")

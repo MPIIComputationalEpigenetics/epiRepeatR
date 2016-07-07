@@ -6,7 +6,7 @@ Authors@R: c(
     role = c("aut", "cre")))
 Date: 2016-07-07
 License: GPL-3
-Version: 0.4
+Version: 0.5
 Depends:
 	muPipeR,
     RnBeads,
