@@ -4,7 +4,7 @@ Description: An R package for anlyzing the epigenetics of repetitive elements
 Authors@R: c(
     person("Fabian", "Mueller", email = "fmueller@mpi-inf.mpg.de",
     role = c("aut", "cre")))
-Date: 2016-07-07
+Date: 2016-07-14
 License: GPL-3
 Version: 0.5
 Depends:
@@ -25,6 +25,7 @@ Collate:
 	'dendrogram_extension.R'
 	'diagram_extension.R'
 	'AnalysisManager-class.R'
+	'repeatAnnotation.R'
 	'RepeatReference-class.R'
 	'RepeatTree-class.R'
 	'RepeatAlignment-class.R'

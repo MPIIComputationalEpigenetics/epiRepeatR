@@ -75,47 +75,6 @@ RepeatReference <- function(reference=.config$refFasta){
 	return(obj)
 }
 
-#' getDNAStringForReference
-#'
-#' given a reference FASTA file, retrieve sequence information for each RE
-#'
-#' @param reference Filename of the reference of REs (FASTA file)
-#' @return \code{DNAStringSet} object containing sequence information for each RE
-#'
-#' @author Fabian Mueller
-#' @noRd
-getDNAStringForReference <- function(reference){
-	refSeqs <- readBStringSet(reference)
-	#replace letters "x"
-	for (i in 1:length(refSeqs)){
-		refSeqs[[i]][start(matchPattern("x",refSeqs[[i]]))] <- "n"
-	}
-	refSeqs <- DNAStringSet(refSeqs)
-	return(refSeqs)
-}
-#' getReferenceInfo
-#'
-#' given a reference FASTA file, retrieve sequence annotation for each RE
-#'
-#' @param reference Filename of the reference of REs (FASTA file)
-#' @return \code{data.frame} containing annotation for each RE
-#' 
-#' @details the RE identifiers in the FASTA file are assumed to have the following format
-#' (tab separated):
-#' repeat id, repeat family, species
-#'
-#' @author Fabian Mueller
-#' @noRd
-getReferenceInfo <- function(reference){
-	refSeqs <- readBStringSet(reference)
-	seqLens <- vapply(refSeqs,length,integer(1))
-	res <- data.frame(t(data.frame(strsplit(names(refSeqs),"\t"))),seqLength=seqLens)
-	colnames(res)[1:4] <- c("id","family","species","seqLength")
-	res[,"id"] <- as.character(res[,"id"])
-	rownames(res) <- res[,1]
-	return(res)
-}
-
 if (!isGeneric("addRepeatInfoFromEmbl")) setGeneric("addRepeatInfoFromEmbl", function(.Object, ...) standardGeneric("addRepeatInfoFromEmbl"))
 #' addRepeatInfoFromEmbl-methods
 #'

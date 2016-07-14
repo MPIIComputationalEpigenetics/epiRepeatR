@@ -1,0 +1,56 @@
+{
+	"human":{
+		"familyRegExp": {
+			"SINE": [
+				"SINE1/7SL",
+				"SINE2/tRNA",
+				"SINE3/5S"
+			],
+			"LINE": [
+				"CR1",
+				"R4",
+				"RTE",
+				"Vingi"
+			],
+			"ERV": [
+				"ERV[0-9]+",
+				"Endogenous Retrovirus"
+			],
+			"Eutheria": [
+				"EUTREP[0-9]+",
+				"Eutr[0-9]+"
+			],
+			"MARE": [
+				"MARE[0-9]+",
+				"Integrated Virus",
+				"Tx1"
+			],
+			"MER": [
+				"MER[0-9]+"
+			],
+			"LTR":[
+				"LTR Retrotransposon",
+				"Long terminal repeat",
+				"Gypsy"
+			],
+			"Satellite": [
+				"satellite",
+				"SAT",
+				"MSAT"
+			],
+			"DNA transposon":[
+				"MuDR",
+				"Helitron",
+				"Kolobok",
+				"Merlin",
+				"piggyBac"
+			],
+			"UNKNOWN":[
+				"HSFAU",
+				"KER",
+				"Penelope",
+				"RTEX"
+			]
+		}
+	}
+}

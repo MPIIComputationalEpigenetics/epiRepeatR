@@ -1,0 +1,38 @@
+{
+	"Repetitive element": {
+		"Transposable Element": {
+			"LTR Retrotransposon": {
+				"ERV":[]
+			},
+			"Non-LTR Retrotransposon": {
+				"LINE": {
+					"L1":[],
+					"L2":[]
+				},
+				"SINE":[]
+			},
+			"DNA transposon": {
+				"Mariner/Tc1":[],
+				"hAT":[],
+				"piggyBac":[]
+			}
+		},
+		"Simple Repeat": {
+			"Satellite":[]
+		},
+		"Pseudogene": {
+			"rRNA":[],
+			"snRNA":[]
+		},
+		"tRNA":[],
+		"UNKNOWN": {
+			"Eutheria":[],
+			"MARE":[],
+			"MER":[],
+			"HSFAU":[],
+			"KER":[],
+			"Penelope":[],
+			"RTEX":[]
+		}
+	}
+}

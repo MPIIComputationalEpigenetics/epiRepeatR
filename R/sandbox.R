@@ -83,6 +83,7 @@ printAln <- function(reads, refSeqs){
 # refNames <- refInfo[,"id"]
 # names(refSeqs) <- refNames
 # ss <- "L1MD3"
+# alnTargetLengths <- scanBamHeader(bf)$targets
 # sbWhat <- scanBamWhat()
 # sbWhich <- RangesList(a=IRanges(1,alnTargetLengths[ss]))
 # names(sbWhich)[1] <- ss

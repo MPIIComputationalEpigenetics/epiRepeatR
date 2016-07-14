@@ -1,0 +1,24 @@
+{
+	"human": {
+		"taxOrder": [
+			"Eukaryota",
+			"Metazoa",
+			"Deuterostomia",
+			"Vertebrata",
+			"Euteleostomi",
+			"Teleostomi",
+			"Tetrapoda",
+			"Amniota",
+			"Mammalia",
+			"Theria",
+			"Eutheria",
+			"Euarchontoglires",
+			"Simiiformes",
+			"Primates",
+			"Catarrhini",
+			"Haplorrhini",
+			"Hominidae",
+			"Homo sapiens"
+		]
+	}
+}
