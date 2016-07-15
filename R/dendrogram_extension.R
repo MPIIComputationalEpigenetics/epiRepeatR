@@ -140,3 +140,95 @@ dendrogramAttributeCombineRecursive <- function(tree, attrName, combineFun=c){
 	}
 }
 
+# dd <- list2dend(treeList)
+# plot(dd)
+
+#' createStump
+#' 
+#' create a stump (tree consisting of one leaf node)
+#'
+#' @param x		some label that gets turned into a stump
+#'
+#' @return a dendrogram for the stump
+#'
+#' @author Fabian Mueller
+#' @noRd
+createStump <- function(x){
+	res <- x
+	attr(res,"members") <- 1L
+	attr(res,"label") <- x
+	attr(res,"height") <- 0L
+	attr(res,"leaf") <- TRUE
+	class(res) <- "dendrogram"
+	return(res)
+}
+#' createLinearTree
+#' 
+#' given a dendrogram, append a father node
+#'
+#' @param child      the dendrogram that becomes the child of the new father node
+#' @param lab        label for the father node
+#' @param height     height attribute for the father node
+#'
+#' @return a dendrogram with a new father node and the old dendrogram as its
+#'         only child
+#'
+#' @author Fabian Mueller
+#' @noRd
+createLinearTree <- function(child, lab, h=(attr(child, "height")+1L)){
+	res <- list(child)
+	attr(res, "members")   <- attr(child, "members")
+	attr(res, "height")    <- h
+	attr(res, "label")     <- lab
+	attr(res, "midpoint")  <- 0
+	class(res) <- "dendrogram"
+	return(res)
+}
+#' list2dend
+#'
+#' recursive function transforming a list to a dendrogram
+#'
+#' @return a dendrogram
+#' 
+#' @details Leaf nodes are represented by \code{list()}
+#'
+#' @author Fabian Mueller
+#' @noRd
+list2dend <- function(x, lab="[root]"){
+	res <- NULL
+	if (length(x)<1){
+		return(createStump(lab))
+	} else if (length(x)==1){
+		res <- createLinearTree(list2dend(x[[1]],names(x)[1]), lab)
+	} else {
+		subTrees <- lapply(names(x), FUN=function(ll){list2dend(x[[ll]], ll)})
+		# stMembers <- vapply(subTrees, FUN=function(y){attr(y,"members")}, integer(1))
+		stHeights <- vapply(subTrees, FUN=function(y){attr(y,"height")}, integer(1))
+
+		res <- do.call("merge", unname(subTrees)) #careful: merge aparently modifies the midpoint attributes of subtrees again
+
+		# attr(res,"members")  <- sum(stMembers)
+		attr(res,"label")    <- lab
+		attr(res,"height")   <- max(stHeights) + 1L
+		attr(res,"midpoint") <- (attr(res,"members")-1)/2
+	}
+	return(res)
+}
+#' adjustAttr.midpoint
+#'
+#' recursively adjust the "midpoint" attribute
+#' 
+#' @param tree  the dendrogram to which the adjustment should be applied
+#'
+#' @return the modified dendrogram
+#'
+#' @author Fabian Mueller
+#' @noRd
+adjustAttr.midpoint <- function(tree){
+	res <- dendrapply(tree, function(x){
+		nMems <- attr(x,"members")
+		attr(x, "midpoint") <- ifelse(nMems > 1, (nMems-1)/2, 0)
+		return(x)
+	})
+	return(res)
+}

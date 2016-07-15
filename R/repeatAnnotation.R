@@ -103,48 +103,6 @@ simplifyRepeatFamilies <- function(famVec, tax="human"){
 
 #' getCuratedRepeatFamilyTree
 #'
-#' recursive function transforming a list to a dendrogram
-#'
-#' @return a dendrogram
-#' 
-#' @details Leaf nodes are represented by \code{list()}
-#'
-#' @author Fabian Mueller
-#' @noRd
-list2dend <- function(x, lab="[root]"){
-	res <- NULL
-	if (length(x)<1){
-		res <- lab
-		attr(res,"members") <- 1L
-		attr(res,"label") <- lab
-		attr(res,"height") <- 0L
-		attr(res,"leaf") <- TRUE
-	} else if (length(x)==1){
-		res <- list(list2dend(x[[1]], names(x)[1]))
-		attr(res,"members")  <- attr(res[[1]],"members")
-		attr(res,"height")   <- attr(res[[1]],"height") + 1L
-		# attr(res,"midpoint") <- 1
-		attr(res,"label")   <- lab
-	} else {
-		subTrees <- lapply(names(x), FUN=function(ll){list2dend(x[[ll]], ll)})
-		stMembers <- vapply(subTrees, FUN=function(y){attr(y,"members")}, integer(1))
-		stHeights <- vapply(subTrees, FUN=function(y){attr(y,"height")}, integer(1))
-
-		res <- do.call("merge", unname(subTrees))
-
-		attr(res,"members")  <- sum(stMembers)
-		attr(res,"label")    <- lab
-		attr(res,"height")   <- max(stHeights) + 1L
-		attr(res,"midpoint") <- (attr(res,"members")-1)/2
-	}
-	class(res) <- "dendrogram"
-	return(res)
-}
-# dd <- list2dend(treeList)
-# plot(dd)
-
-#' getCuratedRepeatFamilyTree
-#'
 #' retrieves a hand-curated family tree of repeat families
 #'
 #' @return a dendrogram containing the curated repeat family tree
@@ -156,33 +114,103 @@ getCuratedRepeatFamilyTree <- function(){
 	if (length(treeList) > 1){
 		logger.error("Not a tree (but a forest?)")
 	}
-	return(list2dend(treeList, names(treeList)[1]))
+	treeName <- "Repetitive element"
+	res <- list2dend(treeList[[treeName]], treeName)
+	res <- adjustAttr.midpoint(res)
+	return(res)
 }
+# rtc <- getCuratedRepeatFamilyTree()
+# plot(rtc)
+# require(diagram)
+# openplotmat()
+# plotDend.rec(rtc, xmin=0, xmax=1, ymin=0, ymax=1, rev=TRUE)
 
-# #' assembleRepeatsInCuratedFamilyTree
-# #'
-# #' place the given repeats into the curated family tree
-# #' given their annotated family
-# #'
-# #' @param ids     character vector of repeat ids
-# #' @param fams    character vector of repeat families.
-# #'                must be matching and of same length as \code{ids}
-# #' @param famDend dendrogram of repeat families
-# #' 
-# #' @return a dendrogram containing the curated repeat family tree with the
-# #'         repeat ids as leafs
-# #' 
-# #' @details ! Recursive !
-# #' 
-# #' @author Fabian Mueller
-# #' @noRd
-# assembleRepeatsInCuratedFamilyTree <- function(ids, fams, famDend=getCuratedRepeatFamilyTree()){
-# 	res <- NULL
-# 	if (isLeaf(famDend)){
-# 		a <- NULL
-# 	} else {
-# 		a <- NULL
-# 	}
-# 	return(res)
-# }
-# assembleRepeatsInCuratedFamilyTree(repFeats[["id"]], simplifyRepeatFamilies(repFeats[["family"]], tax="human"))
+#' addLeafs
+#'
+#' create a tree that contains all the child nodes of the original tree
+#' plus additional leaf nodes for a vector of new node labels
+#'
+#' @param dend    dendrogram to modify
+#' @param newLeafLabels labels for the newly created leaf nodes.
+#'                if empty, the unmodified dendrogram is returned
+#' 
+#' @return the modified dendrogram
+#' 
+#' @author Fabian Mueller
+#' @noRd
+addLeafs <- function(dend, newLeafLabels){
+	res <- dend
+	if (length(newLeafLabels) > 0){
+		dends2merge <- lapply(newLeafLabels, createStump)
+		# the dendrogram is not a leaf anymore
+		if (!isLeaf(dend)){
+			subTrees <- lapply(dend, identity)
+			dends2merge <- c(subTrees, dends2merge)
+		}
+		if (length(dends2merge) > 1){
+			# print(sapply(dends2merge,class))
+			res <- do.call("merge", unname(dends2merge))
+		} else if (length(dends2merge) == 1){
+			res <- createLinearTree(dends2merge[[1]], attr(dend, "label"), h=attr(dend, "height"))
+		} else {
+			logger.error("Invalid structure: cannot combine less than one node into a tree")
+		}
+		nMems <- attr(res, "members")
+		attr(res, "label")    <- attr(dend, "label")
+		attr(res, "height")   <- attr(dend, "height")
+		if (isLeaf(dend)) attr(res, "leaf") <- NULL
+		attr(res, "midpoint") <- (nMems-1)/2
+	}
+	return(res)
+}
+#' assembleRepeatsInCuratedFamilyTree
+#'
+#' place the given repeats into the curated family tree
+#' given their annotated family
+#'
+#' @param ids     character vector of repeat ids
+#' @param fams    character vector of repeat families.
+#'                must be matching and of same length as \code{ids}
+#' @param famDend dendrogram of repeat families
+#' 
+#' @return a dendrogram containing the curated repeat family tree with the
+#'         repeat ids as leafs
+#' 
+#' @details ! Recursive !
+#' 
+#' @author Fabian Mueller
+#' @noRd
+assembleRepeatsInCuratedFamilyTree <- function(ids, fams, famDend=getCuratedRepeatFamilyTree()){
+	# print(attr(famDend,"label"))
+	matchingFams <- fams==attr(famDend,"label")
+	curIds <- c()
+	if (any(matchingFams)){
+		curIds <- ids[matchingFams]
+	}
+	res <- famDend
+	if (!isLeaf(famDend)){
+		dendList <- lapply(famDend, FUN=function(x){
+			assembleRepeatsInCuratedFamilyTree(ids, fams, famDend=x)
+		})
+		if (length(dendList) > 1){
+			res <- do.call("merge", unname(dendList))
+		} else if (length(dendList) == 1){
+			res <- createLinearTree(dendList[[1]], attr(famDend,"label"), attr(famDend,"height"))
+		} else {
+			logger.error("Invalid structure: no subTrees found and not a leaf")
+		}
+	}
+	res <- addLeafs(res, curIds)
+	attr(res, "height") <- attr(famDend, "height") + 1L
+	return(res)
+}
+# rt <- assembleRepeatsInCuratedFamilyTree(repFeats[["id"]], simplifyRepeatFamilies(repFeats[["family"]], tax="human"))
+# rt <- adjustAttr.midpoint(rt)
+# pdf("~/tmp/repTreeCure_dendPlot.pdf", width=100,height=10)
+# 	plot(rt)
+# dev.off()
+# require(diagram)
+# pdf("~/tmp/repTreeCure.pdf", width=10,height=100)
+# 	openplotmat()
+# 	plotDend.rec(rt, xmin=0, xmax=1, ymin=0, ymax=1, rev=TRUE)
+# dev.off()
