@@ -134,7 +134,8 @@ getCuratedRepeatFamilyTree <- function(){
 #' @param newLeafLabels labels for the newly created leaf nodes.
 #'                if empty, the unmodified dendrogram is returned
 #' 
-#' @return the modified dendrogram
+#' @return the modified dendrogram. If there are no new leafs and \code{dend}
+#'         is a leaf, \code{NULL} will be returned
 #' 
 #' @author Fabian Mueller
 #' @noRd
@@ -160,6 +161,10 @@ addLeafs <- function(dend, newLeafLabels){
 		attr(res, "height")   <- attr(dend, "height")
 		if (isLeaf(dend)) attr(res, "leaf") <- NULL
 		attr(res, "midpoint") <- (nMems-1)/2
+	} else {
+		if (isLeaf(dend)){
+			return(NULL)
+		}
 	}
 	return(res)
 }
@@ -174,7 +179,8 @@ addLeafs <- function(dend, newLeafLabels){
 #' @param famDend dendrogram of repeat families
 #' 
 #' @return a dendrogram containing the curated repeat family tree with the
-#'         repeat ids as leafs
+#'         repeat ids as leafs. Branches not associated with any id will be pruned
+#'         Returns \code{NULL} if no ids can be associated with any node in the tree
 #' 
 #' @details ! Recursive !
 #' 
@@ -192,19 +198,28 @@ assembleRepeatsInCuratedFamilyTree <- function(ids, fams, famDend=getCuratedRepe
 		dendList <- lapply(famDend, FUN=function(x){
 			assembleRepeatsInCuratedFamilyTree(ids, fams, famDend=x)
 		})
+		# check for each subtree whether there are any ids matched to it and prune
+		# the branches that don't have associated ids
+		dendList <- dendList[!vapply(dendList, is.null, logical(1))]
 		if (length(dendList) > 1){
 			res <- do.call("merge", unname(dendList))
+			attr(res, "label") <- attr(famDend, "label")
+			attr(res, "midpoint") <- (attr(res, "members")-1)/2
 		} else if (length(dendList) == 1){
 			res <- createLinearTree(dendList[[1]], attr(famDend,"label"), attr(famDend,"height"))
 		} else {
-			logger.error("Invalid structure: no subTrees found and not a leaf")
+			# empty list: no ids associated with the tree
+			res <- return(NULL)
 		}
 	}
 	res <- addLeafs(res, curIds)
-	attr(res, "height") <- attr(famDend, "height") + 1L
+	if (!is.null(res)){
+		attr(res, "height") <- attr(famDend, "height") + 1L
+	}
 	return(res)
 }
 # rt <- assembleRepeatsInCuratedFamilyTree(repFeats[["id"]], simplifyRepeatFamilies(repFeats[["family"]], tax="human"))
+# if (is.null(rt)) logger.error("Could not associate any repeat id with the curated tree")
 # rt <- adjustAttr.midpoint(rt)
 # pdf("~/tmp/repTreeCure_dendPlot.pdf", width=100,height=10)
 # 	plot(rt)

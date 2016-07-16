@@ -8,7 +8,8 @@ setClassUnion("ListOrNULL", c("list", "NULL"))
 #' @section Slots:
 #' \describe{
 #'   \item{\code{tree}}{the dendrogram organizing the reference repeats}
-#'   \item{\code{repeatRef}}{Reference repeats as Object of type \code{\linkS4class{RepeatReference}}} 
+#'   \item{\code{repeatRef}}{Reference repeats as Object of type \code{\linkS4class{RepeatReference}}}
+#'   \item{\code{method}}{a character string specifying the method that was used to derive the tree}
 #' }
 #'
 #' @section Methods:
@@ -23,7 +24,8 @@ setClassUnion("ListOrNULL", c("list", "NULL"))
 setClass("RepeatTree",
 	slots = list(
 		tree="dendrogram",
-		repeatRef="RepeatReference"
+		repeatRef="RepeatReference",
+		method="character"
 	),
 	package = "epiRepeatR"
 )
@@ -60,6 +62,19 @@ setMethod("initialize", "RepeatTree",
 			attr(repTree,"height") <- 1
 			attr(repTree,"midpoint") <- (nrow(repInfo)-1)/2
 			class(repTree) <- "dendrogram"
+		} else if (method=="repeatFamilyCurated"){
+			simpleFams <- simplifyRepeatFamilies(repInfo$family, tax=getSpecies(repRef))
+			repTree <- assembleRepeatsInCuratedFamilyTree(repInfo$id, simpleFams)
+			if (is.null(repTree)){
+				logger.error("Could not associate any repeat id with the curated tree")
+			}
+			matchedIds <- getMemberAttr(repTree, "label")
+			isMatched <- repInfo$id %in% matchedIds
+			# unmatchedIds <- setdiff(repInfo$id, matchedIds)
+			if (!all(isMatched)){
+				logger.error(c("Could not match the following repeat families to the curated family tree:", paste(repInfo$family[isMatched], collapse=",")))
+			}
+			repTree <- adjustAttr.midpoint(repTree)
 		} else if (method=="hierClust"){
 			clustHier <- hclust(dd, method="complete")
 			repTree <- as.dendrogram(clustHier)
@@ -94,6 +109,7 @@ setMethod("initialize", "RepeatTree",
 		}
 		.Object@tree=repTree
 		.Object@repeatRef=repRef
+		.Object@method=method
 		.Object
 	}
 )
@@ -114,6 +130,25 @@ RepeatTree <- function(repRef,method="repeatFamily"){
 	return(obj)
 }
 
+if (!isGeneric("getDendrogramMethod")) setGeneric("getDendrogramMethod", function(.Object) standardGeneric("getDendrogramMethod"))
+#' getDendrogramMethod-methods
+#'
+#' Return the method that was used to derive the dendrogram
+#'
+#' @param .Object \code{\linkS4class{RepeatTree}} object
+#' @return character string specifying the method used to derive the dendrogram
+#'
+#' @rdname getDendrogramMethod-RepeatTree-method
+#' @docType methods
+#' @aliases getDendrogramMethod
+#' @aliases getDendrogramMethod,RepeatTree-method
+#' @author Fabian Mueller
+#' @noRd
+setMethod("getDendrogramMethod", signature(.Object="RepeatTree"),
+	function(.Object){
+		return(.Object@method)
+	}
+)
 if (!isGeneric("getDendrogram")) setGeneric("getDendrogram", function(.Object) standardGeneric("getDendrogram"))
 #' getDendrogram-methods
 #'
@@ -180,12 +215,6 @@ setMethod("setDendrogramMemberAttr", signature(.Object="RepeatTree"),
 	}
 )
 
-# Helper function determining if the dendrogram is a leaf 
-isLeaf <- function(dend){
-	if (!is.null(attr(dend,"leaf"))) return(attr(dend,"leaf"))
-	return(FALSE)
-}
-
 #' plotDend.rec
 #'
 #' Plots a a dendrogram in the specified set of coordinates. Recursive function!
@@ -199,11 +228,12 @@ isLeaf <- function(dend){
 #' @param yroot     the y coordinate of the root of the dendrogram
 #' @param rev       should the order of the members of the dendrogram be reversed in plotting (top to bottom instead of bottom to top drawing)
 #' @param cex       text size of the labels
+#' @param addInteriorLabels logical specifying whether labels for interior nodes should be added
 #' @return nothing of particular interest
 #'
 #' @author Fabian Mueller
 #' @noRd
-plotDend.rec <- function(dend, xmin=0, xmax=1, ymin=0, ymax=1, depth=0, yroot=NULL, rev=TRUE, cex=0.5){
+plotDend.rec <- function(dend, xmin=0, xmax=1, ymin=0, ymax=1, depth=0, yroot=NULL, rev=TRUE, cex=0.5, addInteriorLabels=FALSE){
 	if (isLeaf(dend)){
 		pbgcol <- attr(dend,"leafBgColor")
 		if (is.null(pbgcol)){
@@ -272,11 +302,14 @@ plotDend.rec <- function(dend, xmin=0, xmax=1, ymin=0, ymax=1, depth=0, yroot=NU
 		# splitarrow(from=cbind(root.x,root.y),to=cbind(subDend.x,subDend.y),lcol="red")
 		# treearrow(from=cbind(root.x,root.y),to=cbind(subDend.x,subDend.y),path="V",arr.side=0,lcol="red")
 		treefork(from=cbind(root.x,root.y),to=cbind(subDend.x,subDend.y),path="H")
+		if (addInteriorLabels){
+			textempty(cbind(root.x, root.y), lab=attr(dend,"label"), cex=cex, adj=c(1, 0))
+		}
 
 		for (i in 1:length(dend)){
 			subi <- i
 			if (rev) subi <- length(dend) - i + 1
-			plotDend.rec(dend[[subi]], xmin=subDend.x[i], xmax=xmax, ymin=subDend.ymin[i], ymax=subDend.ymax[i], depth=depth+1, yroot=subDend.y[i], rev=rev)
+			plotDend.rec(dend[[subi]], xmin=subDend.x[i], xmax=xmax, ymin=subDend.ymin[i], ymax=subDend.ymax[i], depth=depth+1, yroot=subDend.y[i], rev=rev, addInteriorLabels=addInteriorLabels)
 		}
 	}
 }
@@ -306,7 +339,8 @@ setMethod("addToPlot", signature(.Object="RepeatTree"),
 		dend <- .Object@tree
 		# openplotmat()
 		# xmin=0; xmax=1; ymin=0; ymax=1
-		plotDend.rec(dend, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, rev=rev)
+		intLabs <- .hasSlot(.Object, "method") && is.element(.Object@method, c("repeatFamily", "repeatFamilyCurated"))
+		plotDend.rec(dend, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, rev=rev, addInteriorLabels=intLabs)
 	}
 )
 

@@ -22,6 +22,9 @@ setClassUnion("ListOrNULL", c("list", "NULL"))
 #'   \item{\code{sequences}}{
 #'       \code{DNAStringSet} containing sequence information for each RE.
 #'   }
+#'   \item{\code{sequences}}{
+#'       Species the reference pertains to (as string)
+#'   }
 #' }
 #'
 #' @section Methods:
@@ -41,20 +44,22 @@ setClass("RepeatReference",
 		reference="character",
 		repeatInfo="data.frame",
 		repeatInfoList="ListOrNULL",
-		sequences="DNAStringSet"
+		sequences="DNAStringSet",
+		species="character"
 	),
 	package = "epiRepeatR"
 )
 
 setMethod("initialize", "RepeatReference",
 	function(.Object,
-		reference=.config$refFasta
+		reference=.config$refFasta,
+		species=.config$species
 	){
 		.Object@reference=reference
 		.Object@repeatInfo=getReferenceInfo(reference)
 		.Object@repeatInfoList=NULL
 		.Object@sequences=getDNAStringForReference(reference)
-
+		.Object@sequences=species
 		.Object
 	}
 )
@@ -62,12 +67,13 @@ setMethod("initialize", "RepeatReference",
 #' RepeatReference Constructor
 #' 
 #' @param reference Filename of the reference of REs (FASTA file)
+#' @param species   Species the reference pertains to
 #' @name RepeatReference
 #' @rdname RepeatReference-class
 #' @author Fabian Mueller
 #' @noRd
 ## @export
-RepeatReference <- function(reference=.config$refFasta){
+RepeatReference <- function(reference=.config$refFasta, species=.config$species){
 	obj <- new("RepeatReference",
 		reference
 	)
@@ -142,6 +148,32 @@ setMethod("filterRepeats_wl", signature(.Object="RepeatReference"),
 # rr <- RepeatReference()
 # keepRepIds <- sample(rr@repeatInfo$id, 100)
 # rrf <- filterRepeats_wl(rr,keepRepIds)
+
+if (!isGeneric("getSpecies")) setGeneric("getSpecies", function(.Object) standardGeneric("getSpecies"))
+#' getSpecies-methods
+#'
+#' Retrieve the species the reference pertains to
+#'
+#' @param .Object         \code{\linkS4class{RepeatReference}} object
+#' @return string specifying the species
+#'
+#' @rdname getSpecies-RepeatReference-method
+#' @docType methods
+#' @aliases getSpecies
+#' @aliases getSpecies,RepeatReference-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
+setMethod("getSpecies", signature(.Object="RepeatReference"),
+	function(.Object){
+		if (!.hasSlot(.Object, "species")){
+			res <- .config$species
+			logger.warning(c("The RepeatReference object is depreacted and does not have a species slot yet. --> using the corresponding config element (", res , ")"))
+			return(res)
+		}
+		return(.Object@species)
+	}
+)
 if (!isGeneric("getRepeatInfo")) setGeneric("getRepeatInfo", function(.Object) standardGeneric("getRepeatInfo"))
 #' getRepeatInfo-methods
 #'

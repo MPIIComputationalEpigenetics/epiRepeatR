@@ -28,8 +28,7 @@
 			"MER": [
 				"MER[0-9]+"
 			],
-			"LTR":[
-				"LTR Retrotransposon",
+			"LTR Retrotransposon":[
 				"Long terminal repeat",
 				"Gypsy"
 			],

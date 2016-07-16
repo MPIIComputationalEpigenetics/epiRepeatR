@@ -1,3 +1,18 @@
+#' isLeaf
+#'
+#' helper function to determine if a dendrogram is a leaf, handling \code{NULL}
+#' (in which case \code{FALSE} is returned)
+#'
+#' @param dend		a dendrogram
+#' @return logical specifying whether the dendrogram is a leaf
+#'
+#' @author Fabian Mueller
+#' @noRd
+isLeaf <- function(dend){
+	if (!is.null(attr(dend,"leaf"))) return(attr(dend,"leaf"))
+	return(FALSE)
+}
+
 #' dendrogramMergeSimple
 #'
 #'  naively merge a list of dendrograms into a new dendrogram with each branch belonging to an element in the list by just setting the class and a couple of attributes
