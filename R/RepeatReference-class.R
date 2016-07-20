@@ -59,7 +59,7 @@ setMethod("initialize", "RepeatReference",
 		.Object@repeatInfo=getReferenceInfo(reference)
 		.Object@repeatInfoList=NULL
 		.Object@sequences=getDNAStringForReference(reference)
-		.Object@sequences=species
+		.Object@species=species
 		.Object
 	}
 )
