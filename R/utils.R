@@ -444,6 +444,28 @@ parseMcTable.bissnp <- function(mcFile){
 	gr.merged <- mergeMethGr(gr)
 	return(gr.merged)
 }
+#' parseMcTable.epp
+#'
+#' Parse methylation calls from EPP output format
+#'
+#' @param mcFile methylation call file
+#' @return a GRanges object containing methylation calls for cytosine positions
+#'
+#' @author Fabian Mueller
+#' @noRd
+parseMcTable.epp <- function(mcFile){
+	tt <- read.table(mcFile, sep="\t", header=FALSE, stringsAsFactors=FALSE)
+	colnames(tt)[1:6] <- c("chrom", "start", "end", "methStr", "score", "strand")
+
+	valM <- as.integer(gsub("^([0-9]+)/([0-9]+)$", "\\1", tt$methStr))
+	valT <- as.integer(gsub("^([0-9]+)/([0-9]+)$", "\\2", tt$methStr))
+
+	gr <- GRanges(tt$chrom, IRanges(tt$start, width=2), strand=tt$strand)
+	elementMetadata(gr) <- data.frame(M=valM,T=valT)
+
+	gr.merged <- mergeMethGr(gr)
+	return(gr.merged)
+}
 
 #' logger.cmd.args
 #'

@@ -9,7 +9,7 @@
 \S4method{filterRepRefMeth}{RepeatEpigenomeCollection}(.Object,
   minReads = getConfigElement("plotRepTree.meth.minReads"),
   minCpGs = getConfigElement("plotRepTree.meth.minCpGs"),
-  minCpGcov = getConfigElement("meth.minCpGcov"))
+  minCpGcov = getConfigElement("meth.minCpGcov"), covgType = "numReads")
 }
 \arguments{
 \item{.Object}{\code{\linkS4class{RepeatEpigenomeCollection}} object}
@@ -18,7 +18,11 @@
 
 \item{minCpGs}{threshold for the minimum number of CpGs that must be contained in a repeat}
 
-\item{minCpGcov}{threshold for the minimum number of CpGs that must be contained in a repeat}
+\item{minCpGcov}{threshold specifying that mininum number of reads that must cover at least one
+CpG in the repeat in order for it to be retained}
+
+\item{covgType}{type of read coverage to be applied (important for filtering via \code{minReads}).
+See \code{\link{getRepeatCovg,RepeatEpigenomeCollection-method}} for possible values.}
 }
 \value{
 modified \code{\linkS4class{RepeatEpigenomeCollection}} object

@@ -15,6 +15,11 @@ library(RnBeads) #reports
 # 	config = "/DEEP_fhgfs/projects/fmueller/repeatEpigenetics/epiRepeatR/analysis/deepBlood_v04/config/config.json",
 # 	output = "/DEEP_fhgfs/projects/fmueller/repeatEpigenetics/epiRepeatR/analysis/deepBlood_sandbox/"
 # )
+# cmdArgs <- list(
+# 	input  = "/DEEP_fhgfs/projects/fmueller/repeatEpigenetics/epiRepeatR/analysis/deepBlood_fromGenome_v04mergedInput/results/repeatEpigenomeCollection/repeatEpigenomeCollection.rds",
+# 	config = "/DEEP_fhgfs/projects/fmueller/repeatEpigenetics/epiRepeatR/analysis/deepBlood_fromGenome_v04mergedInput/config/config.json",
+# 	output = "/DEEP_fhgfs/projects/fmueller/repeatEpigenetics/epiRepeatR/analysis/deepBlood_fromGenome_v04mergedInput/results/exploratoryReport"
+# )
 
 ap <- ArgumentParser()
 ap$add_argument("-i", "--in", action="store", dest="input", help="Input file (RDS) containing a RepeatEpigenomeCollection object as R dataset.")
@@ -81,20 +86,28 @@ logger.start("Preparing data")
 		logger.info(c("Created output directory:",resDir))
 	}
 
+	markLvls <- getMarks(rec)
+	markLvls.named <- markLvls
+	names(markLvls.named) <- markLvls
+
 	logger.start("Filtering")
-		rec <- filterRepRefMeth(
-			rec,
-			minReads=getConfigElement("plotRepTree.meth.minReads"),
-			minCpGs=getConfigElement("plotRepTree.meth.minCpGs"),
-			minCpGcov=getConfigElement("meth.minCpGcov")
-		)
+		if (is.element("DNAmeth", markLvls)){
+			rec <- filterRepRefMeth(
+				rec,
+				minReads=getConfigElement("plotRepTree.meth.minReads"),
+				minCpGs=getConfigElement("plotRepTree.meth.minCpGs"),
+				minCpGcov=getConfigElement("meth.minCpGcov")
+			)
+		}
+		if (length(setdiff(markLvls, "DNAmeth")) > 0){
+			rec <- filterRepRefChip(rec, minReads=getConfigElement("plotRepTree.meth.minReads"))
+		}
+		numReps <- c(length(getRepeatIds(getRepRef(rec)))
+		logger.info(numReps, "repeats retained after filtering"))
 	logger.completed()
 
 	aa <- getAnnot(rec)
 	aa.all <- data.frame(aa, ALL="all")
-	markLvls <- getMarks(rec)
-	markLvls.named <- markLvls
-	names(markLvls.named) <- markLvls
 
 	sampleGroups <- getSampleGroups(aa, addAll=TRUE)
 	sampleGroupNames <- names(sampleGroups)

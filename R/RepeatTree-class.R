@@ -72,7 +72,7 @@ setMethod("initialize", "RepeatTree",
 			isMatched <- repInfo$id %in% matchedIds
 			# unmatchedIds <- setdiff(repInfo$id, matchedIds)
 			if (!all(isMatched)){
-				logger.error(c("Could not match the following repeat families to the curated family tree:", paste(repInfo$family[isMatched], collapse=",")))
+				logger.error(c("Could not match the following repeat families to the curated family tree:", paste(repInfo$family[!isMatched], collapse=",")))
 			}
 			repTree <- adjustAttr.midpoint(repTree)
 		} else if (method=="hierClust"){

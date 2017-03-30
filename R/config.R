@@ -21,6 +21,7 @@
 .config$plotRepTree.meth.minReads <- 100
 .config$annotCols.replicates <- NULL
 .config$meth.minCpGcov  <- 5 #NULL
+.config$meth.methCallFormat  <- "BisSNP" #"EPP"
 .config$genomeRepeatTrack <- NULL
 .config$debug <- FALSE
 #assignInNamespace(".config", .config, "epiRepeatR") # to manually assign in non-exported variables
@@ -97,6 +98,9 @@
 #'   }
 #'   \item{\bold{\code{meth.minCpGcov}}\code{ = 5}}{
 #'        Minimum number of reads covering a CpG in a repeat element in order to be considered in computing methylation.
+#'   }
+#'   \item{\bold{\code{meth.methCallFormat}}\code{ = "BisSNP"}}{
+#'        Format of input methylation calling files. Can be one of "BisSNP", "EPP"
 #'   }
 #'   \item{\bold{\code{genomeRepeatTrack}}\code{ = NULL}}{
 #'      Path to an RDS file containing a GenomeRepeatTrack object. These files are used to map the sequencing reads instead of the consensus reference.

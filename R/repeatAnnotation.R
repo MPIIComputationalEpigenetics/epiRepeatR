@@ -208,8 +208,9 @@ assembleRepeatsInCuratedFamilyTree <- function(ids, fams, famDend=getCuratedRepe
 		} else if (length(dendList) == 1){
 			res <- createLinearTree(dendList[[1]], attr(famDend,"label"), attr(famDend,"height"))
 		} else {
-			# empty list: no ids associated with the tree
-			res <- return(NULL)
+			# empty list: no ids associated with the subtree
+			# --> create new leaf with old label
+			res <- createStump(attr(famDend, "label"))
 		}
 	}
 	res <- addLeafs(res, curIds)

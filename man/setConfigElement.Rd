@@ -84,6 +84,9 @@ Set a configuration item to a given value
   \item{\bold{\code{meth.minCpGcov}}\code{ = 5}}{
        Minimum number of reads covering a CpG in a repeat element in order to be considered in computing methylation.
   }
+  \item{\bold{\code{meth.methCallFormat}}\code{ = "BisSNP"}}{
+       Format of input methylation calling files. Can be one of "BisSNP", "EPP"
+  }
   \item{\bold{\code{genomeRepeatTrack}}\code{ = NULL}}{
      Path to an RDS file containing a GenomeRepeatTrack object. These files are used to map the sequencing reads instead of the consensus reference.
      Only meaningful if processing input files of type \code{genomeMethCalling} or \code{genomeAlignment}.

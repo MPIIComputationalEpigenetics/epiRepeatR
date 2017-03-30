@@ -68,11 +68,13 @@ setMethod("initialize", "GenomeMethylationCalls",
 		.Object
 	}
 )
-GenomeMethylationCalls <- function(mcFile, repeatTrack, mcFormat="BisSNP"){
+GenomeMethylationCalls <- function(mcFile, repeatTrack, mcFormat=getConfigElement("meth.methCallFormat")){
 	logger.start("Reading methylation calls")
 	if (mcFormat=="BisSNP"){
 		mcGr <- parseMcTable.bissnp(mcFile)
-	} else{
+	} else if (mcFormat=="EPP"){
+		mcGr <- parseMcTable.epp(mcFile)
+	} else {
 		logger.error(c("Unrecognized methylation call format:", mcFormat))
 	}
 	logger.completed()

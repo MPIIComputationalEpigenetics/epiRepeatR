@@ -400,7 +400,8 @@ setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 		if (markType == "DNAmeth"){
 			if (type=="maxCpGcov"){
 				covgFun <- function(x){
-					max(x$methCalls$numT, na.rm=TRUE)
+					if (nrow(x$methCalls) < 1) return(NA)
+					return(max(x$methCalls$numT, na.rm=TRUE))
 				}
 			} else if (type=="numInstances"){
 				# for data inferred from genome methylation calls only: use the
@@ -462,7 +463,10 @@ if (!isGeneric("filterRepRefMeth")) setGeneric("filterRepRefMeth", function(.Obj
 #' @param .Object	      \code{\linkS4class{RepeatEpigenomeCollection}} object
 #' @param minReads 		  threshold for the minimum number of reads required to cover a repeat
 #' @param minCpGs		  threshold for the minimum number of CpGs that must be contained in a repeat
-#' @param minCpGcov		  threshold for the minimum number of CpGs that must be contained in a repeat
+#' @param minCpGcov		  threshold specifying that mininum number of reads that must cover at least one
+#'                        CpG in the repeat in order for it to be retained 
+#' @param covgType        type of read coverage to be applied (important for filtering via \code{minReads}).
+#'                        See \code{\link{getRepeatCovg,RepeatEpigenomeCollection-method}} for possible values.
 #' @return modified \code{\linkS4class{RepeatEpigenomeCollection}} object
 #' 
 #' @details
@@ -475,7 +479,7 @@ if (!isGeneric("filterRepRefMeth")) setGeneric("filterRepRefMeth", function(.Obj
 #' @author Fabian Mueller
 #' @export
 setMethod("filterRepRefMeth", signature(.Object="RepeatEpigenomeCollection"),
-	function(.Object,  minReads=getConfigElement("plotRepTree.meth.minReads"), minCpGs=getConfigElement("plotRepTree.meth.minCpGs"), minCpGcov=getConfigElement("meth.minCpGcov")){
+	function(.Object,  minReads=getConfigElement("plotRepTree.meth.minReads"), minCpGs=getConfigElement("plotRepTree.meth.minCpGs"), minCpGcov=getConfigElement("meth.minCpGcov"), covgType="numReads"){
 		res <- .Object
 		repRef <- getRepRef(.Object)
 		repRefNames <- getRepeatIds(repRef)
@@ -499,23 +503,26 @@ setMethod("filterRepRefMeth", signature(.Object="RepeatEpigenomeCollection"),
 			}))
 			survive.numCG <- numCG >= minCpGs
 		}
+
 		survive.numReads <- matrix(TRUE,nrow=length(repRefNames),ncol=length(methSamples))
 		if (minReads > 1){
-			numReads <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
-				rr <- zeroVec
-				if (length(x[["DNAmeth"]][repRefNames]) > 0) {
-					rr <- sapply(x[["DNAmeth"]][repRefNames], FUN=function(r){
-						if (is.null(r)) return(0) else return(r$readStats["numReads"])
-					})
-				}
-				return(rr)
-			}))
+			# numReads <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
+			# 	rr <- zeroVec
+			# 	if (length(x[["DNAmeth"]][repRefNames]) > 0) {
+			# 		rr <- sapply(x[["DNAmeth"]][repRefNames], FUN=function(r){
+			# 			if (is.null(r)) return(0) else return(r$readStats["numReads"])
+			# 		})
+			# 	}
+			# 	return(rr)
+			# }))
+			numReads <- getRepeatCovg(.Object, "DNAmeth", type=covgType)
 			if (sum(numReads>0, na.rm=TRUE)){
 				survive.numReads <- numReads >= minReads
 			} else {
 				logger.warning("No element has a number of associated reads > 0. Ignore this warning if you are working with methylation calls originating from genome alignments.")
 			}
 		}
+
 		survive.CpGcov <- matrix(TRUE,nrow=length(repRefNames),ncol=length(methSamples))
 		if (!(is.null(minCpGcov) || minCpGcov < 1)){
 			maxCovg <- do.call("cbind",lapply(.Object@epiQuant[methSamples], FUN=function(x){
