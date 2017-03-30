@@ -648,7 +648,10 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				inds.input <- ft[,"sampleName"]==sn & ft[, "dataType"]=="Input" & (ft[, "analysisStep"] %in% c("repeatAlignment", "repeatReadCountsFromGenomeAlignment"))
 			}
 			bamInput <- ft[which(inds.input)[1], "fileName"]
-			isGenomeData <- ft[which(inds.input)[1], "analysisStep"]=="repeatReadCountsFromGenomeAlignment"
+			isGenomeData <- FALSE
+			if (any(inds.input)){
+				isGenomeData <- ft[which(inds.input)[1], "analysisStep"]=="repeatReadCountsFromGenomeAlignment"
+			}
 			if (isGenomeData){
 				chipBams <- sapply(marks4sample ,FUN=function(mm){
 					idx <- ft[,"sampleName"]==sn & ft[,"dataType"]=="ChIPseq" & ft[,"mark"]==mm & (ft[,"analysisStep"] %in% c("repeatReadCountsFromGenomeAlignment"))
