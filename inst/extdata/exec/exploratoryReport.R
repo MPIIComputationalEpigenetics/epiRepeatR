@@ -103,7 +103,7 @@ logger.start("Preparing data")
 			rec <- filterRepRefChip(rec, minReads=getConfigElement("plotRepTree.meth.minReads"))
 		}
 		numReps <- length(epiRepeatR:::getRepeatIds(getRepRef(rec)))
-		logger.info(numReps, "repeats retained after filtering"))
+		logger.info(c(numReps, "repeats retained after filtering"))
 	logger.completed()
 
 	aa <- getAnnot(rec)
