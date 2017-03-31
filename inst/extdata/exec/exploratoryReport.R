@@ -102,7 +102,7 @@ logger.start("Preparing data")
 		if (length(setdiff(markLvls, "DNAmeth")) > 0){
 			rec <- filterRepRefChip(rec, minReads=getConfigElement("plotRepTree.meth.minReads"))
 		}
-		numReps <- c(length(getRepeatIds(getRepRef(rec)))
+		numReps <- length(getRepeatIds(getRepRef(rec)))
 		logger.info(numReps, "repeats retained after filtering"))
 	logger.completed()
 
