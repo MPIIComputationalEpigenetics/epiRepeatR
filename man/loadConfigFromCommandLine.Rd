@@ -15,4 +15,3 @@ Sets the configuration from command line options
 \author{
 Fabian Mueller
 }
-

@@ -2,8 +2,8 @@
 % Please edit documentation in R/RepeatEpigenomeCollection-class.R
 \docType{methods}
 \name{getSamples,RepeatEpigenomeCollection-method}
-\alias{getSamples}
 \alias{getSamples,RepeatEpigenomeCollection-method}
+\alias{getSamples}
 \title{getSamples-methods}
 \usage{
 \S4method{getSamples}{RepeatEpigenomeCollection}(.Object, marks = NULL)
@@ -22,4 +22,3 @@ Return the sample indentifiers contained in the dataset
 \author{
 Fabian Mueller
 }
-

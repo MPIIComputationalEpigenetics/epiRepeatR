@@ -26,4 +26,3 @@ Apply normalizatio to columns of a given matrix
 \author{
 Fabian Mueller
 }
-

@@ -437,6 +437,8 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 						alnType <- .config$aligner.bs
 					} else if (is.element(dn,c("Input","ChIPseq"))){
 						alnType <- .config$aligner.chip
+					} else if (is.element(dn,c("ATACseq"))){
+						alnType <- .config$aligner.atac
 					}
 					curScript <- NULL
 					curExec <- NULL
@@ -453,6 +455,10 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 						curScript <- system.file(file.path("extdata", "exec", "repeatAlignment_bowtie2_chip.sh"), package="epiRepeatR")
 						curExec <- "bowtie2"
 						curOtherArgs <- .config$alignment.params.chip.bowtie2
+					} else if (alnType == "atac_bowtie2") {
+						curScript <- system.file(file.path("extdata", "exec", "repeatAlignment_bowtie2_chip.sh"), package="epiRepeatR")
+						curExec <- "bowtie2"
+						curOtherArgs <- .config$alignment.params.atac.bowtie2
 					} else {
 						logger.warning(c("Did not find aligner for step", stepId,"--> skipping alignment step"))
 					}
@@ -461,7 +467,7 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 						if (alnType == "chip_bwa"){
 							do.bwaIndex <- TRUE
 						}
-						if (alnType == "chip_bowtie2"){
+						if (is.element(alnType, c("chip_bowtie2", "atac_bowtie2"))){
 							do.bowtie2Index <- TRUE
 						}
 						if (sum(stepInds.input)>1){
@@ -695,6 +701,44 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 			logger.status(c("Skipped step:", stepName))
 		}
 		#-----------------------------------------------------------------------
+		stepName <- "atacQuantification"
+		cmd.atacQuantification <- .config$rscript.exec
+		args.atacQuantification <- list()
+		rscript <- system.file(file.path("extdata", "exec", "atacQuantification.R"), package="epiRepeatR")
+		for (sn in sampleNames){
+			stepId <- paste(sn,dn,stepName,sep="_")
+			inds.input <- ft[,"sampleName"]==sn & ft[, "dataType"]=="ATACseq" & (ft[, "analysisStep"] %in% c("repeatAlignment", "repeatReadCountsFromGenomeAlignment"))
+			doStep <- any(stepInds.input)
+			if (doStep){
+				if (sum(inds.input)>1){
+					logger.warning(c("Multiple input bam files found for step",stepId,"--> picking the first one"))
+				}
+				inBamFn  <- ft[which(inds.input)[1],"fileName"]
+				isGenomeData <- ft[which(inds.input)[1],"analysisStep"]=="repeatReadCountsFromGenomeAlignment"
+				outFn <- file.path(paste0("${STEPDIR:", stepName, "}"), paste0(stepId, ".rds"))
+				curArgs <- unname(c(
+					rscript,
+					"--in", inBamFn,
+					"--out", outFn,
+					"--config", cfgSavePath.forPipe
+				))
+				if (isGenomeData){
+					curArgs <- c(curArgs, c("--genome"))
+				}
+				args.atacQuantification <- c(args.atacQuantification, list(curArgs))
+				ft <- addFile(ft, outFn, "ATACseq", mn, sn, stepName)
+			}
+		}
+		if (length(cmd.atacQuantification) > 0 && length(args.atacQuantification) > 0){
+			parentSteps <- character()
+			if (is.element("repeatAlignment", getSteps(pipr))) parentSteps <- "repeatAlignment"
+			if (is.element("repeatReadCountsFromGenomeAlignment", getSteps(pipr))) parentSteps <- "repeatReadCountsFromGenomeAlignment"
+			pipr <- addStep(pipr, stepName, cmd.atacQuantification, args.atacQuantification, parents=parentSteps)
+			logger.status(c("Added step:", stepName))
+		} else {
+			logger.status(c("Skipped step:", stepName))
+		}
+		#-----------------------------------------------------------------------
 		stepName <- "repeatAlignmentStats"
 		cmd.repeatAlignmentStats <- .config$rscript.exec
 		rscript <- system.file(file.path("extdata", "exec", "repeatAlignmentStats.R"), package="epiRepeatR")
@@ -737,7 +781,7 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 		stepName <- "repeatEpigenomeCollection"
 		cmd.repeatEpigenomeCollection <- .config$rscript.exec
 		rscript <- system.file(file.path("extdata", "exec", "repeatEpigenomeCollection.R"), package="epiRepeatR")
-		inputPresent <- (ft[,"analysisStep"] %in% c("methCalling", "chipQuantification")) & ft[,"fileType"]=="rds"
+		inputPresent <- (ft[,"analysisStep"] %in% c("methCalling", "chipQuantification", "atacQuantification")) & ft[,"fileType"]=="rds"
 		doStep <- any(inputPresent)
 		if (doStep){
 			outFn <- file.path(paste0("${STEPDIR:", stepName, "}"), "repeatEpigenomeCollection.rds")
@@ -769,6 +813,7 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 			parentSteps <- character()
 			if (is.element("methCalling", getSteps(pipr))) parentSteps <- c(parentSteps, "methCalling")
 			if (is.element("chipQuantification", getSteps(pipr))) parentSteps <- c(parentSteps, "chipQuantification")
+			if (is.element("atacQuantification", getSteps(pipr))) parentSteps <- c(parentSteps, "atacQuantification")
 			pipr <- addStep(pipr, stepName, cmd.repeatEpigenomeCollection, args.repeatEpigenomeCollection, parents=parentSteps)
 			logger.status(c("Added step:", stepName))
 		} else {

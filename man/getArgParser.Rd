@@ -21,4 +21,3 @@ ap$print_help()
 \author{
 Fabian Mueller
 }
-

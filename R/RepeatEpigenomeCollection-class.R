@@ -97,9 +97,13 @@ inferMarkTypes <- function(marks){
 		marks=="DNAmeth",
 		"DNAmeth",
 		ifelse(
-			grepl(patternHistoneChip, marks, ignore.case=TRUE),
-			"ChIPseq",
-			NA
+			marks=="ATACseq",
+			"ATACseq",
+			ifelse(
+				grepl(patternHistoneChip, marks, ignore.case=TRUE),
+				"ChIPseq",
+				NA
+			)
 		)
 	)
 	if (any(is.na(markTypes))){
@@ -344,6 +348,10 @@ setMethod("getRepeatScores", signature(.Object="RepeatEpigenomeCollection"),
 			scoreFun <- function(x){
 				x$log2fc
 			}
+		} else if (markType == "ATACseq"){
+			scoreFun <- function(x){
+				x$normCount
+			}
 		} else {
 			stop(paste0("Unknown data type for mark:",mark))
 		}
@@ -424,6 +432,10 @@ setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 		} else if (markType == "ChIPseq"){
 			covgFun <- function(x){
 				x$readStats["numReads_chip"]
+			}
+		} else if (markType == "ATACseq"){
+			covgFun <- function(x){
+				x$readStats["numReads"]
 			}
 		} else {
 			stop(paste0("Unknown data type for mark:",mark))

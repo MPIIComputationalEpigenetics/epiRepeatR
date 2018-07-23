@@ -133,9 +133,42 @@ setMethod("computeEnrichment", signature(.obj="GenomeAlignment", inputObj="Genom
 			)	
 			return(rr)
 		})
-		logger.info("4")
 		names(res) <- names(rc.chip)
 		class(res) <- c("RepeatReadEnrichment")
+		return(res)
+	}
+)
+
+if (!isGeneric("normCounts")) setGeneric("normCounts", function(.obj, ...) standardGeneric("normCounts"))
+setMethod("normCounts", signature(.obj="GenomeAlignment"),
+	function(.obj, method="scale", ...){
+		if (is.null(.obj@readCounts)){
+			logger.status("Getting read counts")
+			.obj <- storeReadCounts(.obj, ...)
+		}
+		rc <- getReadCounts(.obj)
+		rcVec <- unlist(rc)
+		totalReads <- sum(rcVec)
+		mu <- mean(rcVec, na.rm=TRUE)
+		sigma <- sd(rcVec, na.rm=TRUE)
+
+		res <- lapply(names(rc),FUN=function(ss){
+			normCount <- NA
+			if (method=="scale" && rc[[ss]] > 0){
+				normCount <- rc[[ss]]/totalReads
+			} else if (method=="zscore" && rc[[ss]] > 0){
+				normCount <- (rc[[ss]]-mu)/sigma
+			}
+			rr <- list(
+				normCount=normCount,
+				readStats=c(
+					numReads=rc[[ss]]
+				)
+			)	
+			return(rr)
+		})
+		names(res) <- names(rc)
+		class(res) <- c("RepeatNormReadCount")
 		return(res)
 	}
 )

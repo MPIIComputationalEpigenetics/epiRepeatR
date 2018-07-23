@@ -2,8 +2,8 @@
 % Please edit documentation in R/RepeatEpigenomeCollection-class.R
 \docType{methods}
 \name{getRepRef,RepeatEpigenomeCollection-method}
-\alias{getRepRef}
 \alias{getRepRef,RepeatEpigenomeCollection-method}
+\alias{getRepRef}
 \title{getRepRef-methods}
 \usage{
 \S4method{getRepRef}{RepeatEpigenomeCollection}(.Object)
@@ -20,4 +20,3 @@ Return the reference repeat object
 \author{
 Fabian Mueller
 }
-

@@ -2,8 +2,8 @@
 % Please edit documentation in R/RepeatEpigenomeCollection-class.R
 \docType{class}
 \name{RepeatEpigenomeCollection-class}
-\alias{RepeatEpigenomeCollection}
 \alias{RepeatEpigenomeCollection-class}
+\alias{RepeatEpigenomeCollection}
 \title{RepeatEpigenomeCollection Class}
 \usage{
 RepeatEpigenomeCollection(quantFns, sampleNames, markNames, annot,
@@ -80,9 +80,9 @@ scores for each mark. A dataset of multiple samples can be annotated.
   }
 }
 }
+
 \author{
 Fabian Mueller
 
 Fabian Mueller
 }
-

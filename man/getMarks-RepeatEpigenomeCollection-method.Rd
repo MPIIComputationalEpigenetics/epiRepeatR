@@ -2,8 +2,8 @@
 % Please edit documentation in R/RepeatEpigenomeCollection-class.R
 \docType{methods}
 \name{getMarks,RepeatEpigenomeCollection-method}
-\alias{getMarks}
 \alias{getMarks,RepeatEpigenomeCollection-method}
+\alias{getMarks}
 \title{getMarks-methods}
 \usage{
 \S4method{getMarks}{RepeatEpigenomeCollection}(.Object)
@@ -20,4 +20,3 @@ Return the epigenetic marks contained in the dataset
 \author{
 Fabian Mueller
 }
-

@@ -18,4 +18,3 @@ plot the repeat alignment statistic from the table output by the pipeline step "
 \author{
 Fabian Mueller
 }
-

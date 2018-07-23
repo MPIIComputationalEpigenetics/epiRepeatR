@@ -2,8 +2,8 @@
 % Please edit documentation in R/RepeatEpigenomeCollection-class.R
 \docType{methods}
 \name{getRepeatCovg,RepeatEpigenomeCollection-method}
-\alias{getRepeatCovg}
 \alias{getRepeatCovg,RepeatEpigenomeCollection-method}
+\alias{getRepeatCovg}
 \title{getRepeatCovg-methods}
 \usage{
 \S4method{getRepeatCovg}{RepeatEpigenomeCollection}(.Object, mark,
@@ -30,4 +30,3 @@ Retrieve the number of reads covering each RE in each sample
 \author{
 Fabian Mueller
 }
-

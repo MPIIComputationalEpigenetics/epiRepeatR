@@ -59,6 +59,8 @@ runAnalysis <- function(anaDir, fileTable=NULL, resetToStep=NULL, submission="sy
 		cmdr <- do.call("CommandRsystem", c(list(logDir=getDir(pipr, "log")), cmdrArgs))
 	} else if (submission == "sge"){
 		cmdr <- do.call("CommandRsge", c(list(logDir=getDir(pipr, "log")), cmdrArgs))
+	} else if (submission == "slurm"){
+		cmdr <- do.call("CommandRslurm", c(list(logDir=getDir(pipr, "log")), cmdrArgs))
 	} else {
 		logger.error("Could not execute pipeline: unknown submission type.")
 	}

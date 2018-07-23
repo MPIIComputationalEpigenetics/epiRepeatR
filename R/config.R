@@ -10,7 +10,9 @@
 .config$alignment.params.bs <- "-g 3 -v 0.2"
 .config$aligner.chip <- "chip_bwa" # ChIP-seq aligner
 .config$alignment.params.chip.bwa <- "-t 8 -q 20 -b" # to be appended to BWA ChIP-seq aligner call
-.config$alignment.params.chip.bowtie2 <- "--local --sensitive-local -p 8" # to be appended to BWA ChIP-seq aligner call
+.config$alignment.params.chip.bowtie2 <- "--local --sensitive-local -p 8" # to be appended to Bowtie2 ChIP-seq aligner call
+.config$aligner.atac <- "atac_bt2" # ATAC-seq aligner
+.config$alignment.params.atac.bowtie2 <- "--local --sensitive-local -p 8" # to be appended to Bowtie2 ChIP-seq aligner call
 .config$samtools.exec <- "samtools" # location of the samtools executable
 .config$chip.mergeInput <- FALSE
 .config$tempDir <- tempdir()
@@ -205,6 +207,7 @@ getArgParser <- function(){
 	ap$add_argument("-p","--numProcesses", action="store", dest="n.processes", type="integer", help="Number pf processes to be used for analysis.")	
 	ap$add_argument("--alignerBS", action="store", dest="aligner.bs", help="Aligner to be used for mapping bisulfite reads to reference repeats. Currently only 'bsmap' is supported")
 	ap$add_argument("--alignerChip", action="store", dest="aligner.chip", help="Aligner to be used for mapping ChIP-seq reads to reference repeats. Currently only 'chip_bwa' is supported")
+	ap$add_argument("--alignerAtac", action="store", dest="aligner.atac", help="Aligner to be used for mapping ATAC-seq reads to reference repeats. Currently only 'atac_bwa' is supported")
 	ap$add_argument("--inputBamUnmapped", action="store_true", dest="inputBamUnmapped", help="Only process unmapped reads from an input bam file")
 	return(ap)
 }

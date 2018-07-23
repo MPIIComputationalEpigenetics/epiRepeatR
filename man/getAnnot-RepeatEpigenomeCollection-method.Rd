@@ -2,8 +2,8 @@
 % Please edit documentation in R/RepeatEpigenomeCollection-class.R
 \docType{methods}
 \name{getAnnot,RepeatEpigenomeCollection-method}
-\alias{getAnnot}
 \alias{getAnnot,RepeatEpigenomeCollection-method}
+\alias{getAnnot}
 \title{getAnnot-methods}
 \usage{
 \S4method{getAnnot}{RepeatEpigenomeCollection}(.Object)
@@ -20,4 +20,3 @@ Return the sample sample annotation table
 \author{
 Fabian Mueller
 }
-

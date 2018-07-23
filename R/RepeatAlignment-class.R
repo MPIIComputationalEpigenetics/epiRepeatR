@@ -198,6 +198,56 @@ setMethod("resetReadCounts", signature(.obj="RepeatAlignment"),
 	}
 )
 
+if (!isGeneric("normCounts")) setGeneric("normCounts", function(.obj, inputObj, ...) standardGeneric("normCounts"))
+#' normCounts-methods
+#'
+#' Normalize the read counts across repeat elements
+#'
+#' @param .obj        \code{\linkS4class{RepeatAlignment}} object
+#' @param method      normalization method. Currently only \code{"scale"} and \code{"zscore"} are supported
+#' @param ...          Arguments passed to \code{storeReadCounts,RepeatAlignment-method}
+#' @return \code{RepeatNormReadCount} object (S3 object). Essentially a list containing the normalized read counts
+#'         and the number of reads mapping to element for each RE in the reference
+#'
+#' @rdname normCounts-RepeatAlignment-method
+#' @docType methods
+#' @aliases normCounts
+#' @aliases normCounts,RepeatAlignment-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
+setMethod("normCounts", signature(.obj="RepeatAlignment"),
+	function(.obj, method="scale", ...){
+		if (is.null(.obj@readCounts)){
+			logger.status("Getting read counts")
+			.obj <- storeReadCounts(.obj, ...)
+		}
+		rc <- getReadCounts(.obj)
+		rcVec <- unlist(rc)
+		totalReads <- sum(rcVec)
+		mu <- mean(rcVec, na.rm=TRUE)
+		sigma <- sd(rcVec, na.rm=TRUE)
+
+		res <- lapply(names(rc),FUN=function(ss){
+			normCount <- NA
+			if (method=="scale" && rc[[ss]] > 0){
+				normCount <- rc[[ss]]/totalReads
+			} else if (method=="zscore" && rc[[ss]] > 0){
+				normCount <- (rc[[ss]]-mu)/sigma
+			}
+			rr <- list(
+				normCount=normCount,
+				readStats=c(
+					numReads=rc[[ss]]
+				)
+			)	
+			return(rr)
+		})
+		names(res) <- names(rc)
+		class(res) <- c("RepeatNormReadCount")
+		return(res)
+	}
+)
 ################################################################################
 #' RepeatAlignmentBiSeq Class
 #'

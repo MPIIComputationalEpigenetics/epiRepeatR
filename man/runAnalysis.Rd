@@ -29,4 +29,3 @@ Run the epiRepeatR pipeline. This is the main function.
 \author{
 Fabian Mueller
 }
-

@@ -25,4 +25,3 @@ gets the annotation from all columns which don't have only unique or only identi
 \author{
 Fabian Mueller
 }
-

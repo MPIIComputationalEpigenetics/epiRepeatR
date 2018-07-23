@@ -2,8 +2,8 @@
 % Please edit documentation in R/RepeatEpigenomeCollection-class.R
 \docType{methods}
 \name{getSampleMarkTable,RepeatEpigenomeCollection-method}
-\alias{getSampleMarkTable}
 \alias{getSampleMarkTable,RepeatEpigenomeCollection-method}
+\alias{getSampleMarkTable}
 \title{getSampleMarkTable-methods}
 \usage{
 \S4method{getSampleMarkTable}{RepeatEpigenomeCollection}(.Object)
@@ -20,4 +20,3 @@ Return a table containing sample-mark combinations covered in the dataset
 \author{
 Fabian Mueller
 }
-

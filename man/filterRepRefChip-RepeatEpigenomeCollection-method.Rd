@@ -2,8 +2,8 @@
 % Please edit documentation in R/RepeatEpigenomeCollection-class.R
 \docType{methods}
 \name{filterRepRefChip,RepeatEpigenomeCollection-method}
-\alias{filterRepRefChip}
 \alias{filterRepRefChip,RepeatEpigenomeCollection-method}
+\alias{filterRepRefChip}
 \title{filterRepRefChip-methods}
 \usage{
 \S4method{filterRepRefChip}{RepeatEpigenomeCollection}(.Object,
@@ -27,4 +27,3 @@ A repeat must fulfill the criteria in all samples in order to be retained
 \author{
 Fabian Mueller
 }
-

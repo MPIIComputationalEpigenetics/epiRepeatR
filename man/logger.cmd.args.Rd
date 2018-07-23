@@ -18,4 +18,3 @@ Log command line options
 \author{
 Fabian Mueller
 }
-

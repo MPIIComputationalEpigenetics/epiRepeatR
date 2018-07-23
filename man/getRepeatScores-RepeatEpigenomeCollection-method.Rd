@@ -2,8 +2,8 @@
 % Please edit documentation in R/RepeatEpigenomeCollection-class.R
 \docType{methods}
 \name{getRepeatScores,RepeatEpigenomeCollection-method}
-\alias{getRepeatScores}
 \alias{getRepeatScores,RepeatEpigenomeCollection-method}
+\alias{getRepeatScores}
 \title{getRepeatScores-methods}
 \usage{
 \S4method{getRepeatScores}{RepeatEpigenomeCollection}(.Object, mark,
@@ -29,4 +29,3 @@ Retrieve values of epigenetic quantifications for each RE in each sample
 \author{
 Fabian Mueller
 }
-

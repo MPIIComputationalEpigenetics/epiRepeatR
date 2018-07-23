@@ -321,7 +321,6 @@ createRepPlot_markTree <- function(
 
 	sampleNames <- getSamples(rec)
 	markLvls <- getMarks(rec)
-	markLvls.isEnrichment <- !(markLvls %in% c("DNAmeth"))
 
 	sampleGroups <- getSampleGroups(getAnnot(rec), addAll=TRUE)
 
@@ -332,7 +331,7 @@ createRepPlot_markTree <- function(
 	scoreMat <- do.call("cbind", lapply(markLvls, FUN=function(mn){
 		rr <- getRepeatScores(rec, mn, minCpGcov=minCpGcov)
 		mt <- inferMarkTypes(mn)
-		if (is.element(mt, c("ChIPseq"))){
+		if (is.element(mt, c("ChIPseq", "ATACseq"))){
 			rr <- normalizeMatrix(rr, method=normChipMethod)
 		}
 		return(rr)
@@ -363,6 +362,10 @@ createRepPlot_markTree <- function(
 	if (!is.na(indMeth)){
 		colGrads[[indMeth]] <- colorpanel(100,"#EDF8B1","#41B6C4","#081D58")
 		zlims[[indMeth]] <- c(0,1)
+	}
+	indAtac <- match("ATACseq", markLvls)
+	if (!is.na(indAtac)){
+		zlims[[indAtac]] <- c(0,1)
 	}
 
 	fn <- file.path(plotDir, paste0("repeatTree_markSummary",".pdf"))
