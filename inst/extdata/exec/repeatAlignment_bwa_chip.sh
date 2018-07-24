@@ -8,7 +8,13 @@ TEMPPREFIX=$6
 BWAARGS="${@:7}"
 
 echo "Step: aln"
-${BWA} aln ${BWAARGS} ${REFFILE} ${INFILE} > ${TEMPPREFIX}_tmp01.sai
+if [ ${INFILE: -4} == ".bam" ]
+then
+	${BWA} aln ${BWAARGS} -b ${REFFILE} ${INFILE} > ${TEMPPREFIX}_tmp01.sai
+else
+	${BWA} aln ${BWAARGS} ${REFFILE} ${INFILE} > ${TEMPPREFIX}_tmp01.sai
+fi
+
 echo "Step: samse"
 ${BWA} samse ${REFFILE} ${TEMPPREFIX}_tmp01.sai ${INFILE} > ${TEMPPREFIX}_tmp02.sam
 echo "Step: Converting to bam"

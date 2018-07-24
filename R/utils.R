@@ -15,6 +15,7 @@ getFileTypeFromFileName <- function(fns, ignoreZip=FALSE) {
 	}
 	fTypes <- file_ext(fns)
 	fTypes[fTypes=="fa"] <- "fasta"
+	fTypes[fTypes=="fq"] <- "fastq"
 	return(fTypes)
 }
 

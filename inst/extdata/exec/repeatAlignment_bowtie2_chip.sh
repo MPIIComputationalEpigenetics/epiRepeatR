@@ -7,10 +7,16 @@ REFFILE=$5
 TEMPPREFIX=$6
 BOWTIEARGS="${@:7}"
 
-echo "Step: Convert bam to fastq"
-bedtools bamtofastq -i ${INFILE} -fq ${TEMPPREFIX}_tmp01.fq
+FQFILE=$INFILE
+if [ ${INFILE: -4} == ".bam" ]
+then
+	echo "Step: Convert bam to fastq"
+	FQFILE=${TEMPPREFIX}_tmp01.fq
+	bedtools bamtofastq -i ${INFILE} -fq ${FQFILE}
+fi
+
 echo "Step: Alignment"
-${BOWTIE} ${BOWTIEARGS} -x ${REFFILE} -U ${TEMPPREFIX}_tmp01.fq -S ${TEMPPREFIX}_tmp02.sam
+${BOWTIE} ${BOWTIEARGS} -x ${REFFILE} -U ${FQFILE} -S ${TEMPPREFIX}_tmp02.sam
 echo "Step: Converting to bam"
 ${SAMTOOLS} view -b -T ${REFFILE} -o ${TEMPPREFIX}_tmp03_unsorted.bam ${TEMPPREFIX}_tmp02.sam
 echo "Step: Sorting bam"

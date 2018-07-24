@@ -373,14 +373,13 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 			cmd.mergeChipInput <- .config$rscript.exec
 			args.mergeChipInput <- list()
 			rscript <- system.file(file.path("extdata", "exec", "mergeChipInput.R"), package="epiRepeatR")
-			inds.input <- ft[, "dataType"]=="Input" & (ft[, "analysisStep"] %in% c("bamExtract", "genomeAlignment"))
+			inds.input <- ft[, "dataType"]=="Input" & ((ft[,"fileType"]=="bam" & ft[, "analysisStep"] %in% c("bamExtract", "genomeAlignment")) | (ft[,"fileType"]=="fastq" & ft[,"analysisStep"]=="seqReads"))
 			doMergeChipInput <- any(inds.input)
 			if (doMergeChipInput){
 				anaStepType <- unique(ft[inds.input, "analysisStep"])
 				if (length(anaStepType)>1) {
 					logger.error("Mixed analysisStep types for inputs of mergeChipInput are not allowed")
 				}
-				outFile <- file.path(paste0("${STEPDIR:", stepName, "}"), "mergedChipInput.bam")
 				ft.sub <- ft[inds.input,,drop=FALSE]
 				inputFns <- ft.sub[,"fileName"]
 				inputFns <- muPipeR:::parseJobStrings(pipr, inputFns)
@@ -391,6 +390,22 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				inFileTable.fn         <- file.path(cfgDir, inFileTable.fn)
 
 				write.table(inputFileTable, file=inFileTable.fn, quote=FALSE, row.names=FALSE, sep="\t", col.names=FALSE)
+
+				outFile <- NULL
+				if (all(ft.sub[,"fileType"]=="fastq")) {
+					isGz <- grepl("\\.gz", inputFns)
+					if (all(isGz)){
+						outFile <- file.path(paste0("${STEPDIR:", stepName, "}"), "mergedChipInput.fastq.gz")
+					} else if (!any(isGz)){
+						outFile <- file.path(paste0("${STEPDIR:", stepName, "}"), "mergedChipInput.fq")
+					} else {
+						logger.error("Mixed gzipped and unpacked fastq files are not allowed as input to mergeChipInput")
+					}
+				} else if (all(ft.sub[,"fileType"]=="bam")) {
+					outFile <- file.path(paste0("${STEPDIR:", stepName, "}"), "mergedChipInput.bam")
+				} else {
+					logger.error("Mixed file extensions for inputs of mergeChipInput are not allowed")
+				}
 
 				args.mergeChipInput <- c(
 					rscript,
@@ -426,7 +441,7 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				for (dn in curDataTypes){
 					stepId <- paste(sn,mn,dn,stepName,sep="_")
 					expInds <- ft[,"sampleName"]==sn & ft[,"mark"]==mn & ft[,"dataType"]==dn
-					stepInds.input <- expInds & ft[,"fileType"]=="bam" & ft[,"analysisStep"]=="bamExtract"
+					stepInds.input <- expInds & ((ft[,"fileType"]=="bam" & ft[,"analysisStep"]=="bamExtract") | (ft[,"fileType"]=="fastq" & ft[,"analysisStep"]=="seqReads"))
 					inputPresent <- any(stepInds.input)
 					alnType <- NULL
 					if (is.element(dn, c("WGBS","RRBS"))){
@@ -490,7 +505,7 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 			}
 		}
 		# seperately add merged Input to repeat alignment tasks if required
-		stepInds.input <- ft[,"fileType"]=="bam" & ft[,"analysisStep"]=="mergeChipInput" & ft[,"dataType"]=="MergedInput"
+		stepInds.input <- ft[,"fileType"] %in% c("bam", "fastq") & ft[,"analysisStep"]=="mergeChipInput" & ft[,"dataType"]=="MergedInput"
 		doMergeChipInputRepeatAlignment <- any(stepInds.input)
 		doMergeChipInput <- doMergeChipInput | doMergeChipInputRepeatAlignment
 		if (doMergeChipInputRepeatAlignment){
