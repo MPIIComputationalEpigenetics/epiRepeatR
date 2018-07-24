@@ -93,21 +93,13 @@ setClass("RepeatEpigenomeCollection",
 #' @noRd
 inferMarkTypes <- function(marks){
 	patternHistoneChip <- "^H[34][K][0-9]+(me|ac)[0-9]?$"
-	markTypes <- ifelse(
-		marks=="DNAmeth",
-		"DNAmeth",
-		ifelse(
-			marks=="ATACseq",
-			"ATACseq",
-			ifelse(
-				grepl(patternHistoneChip, marks, ignore.case=TRUE),
-				"ChIPseq",
-				NA
-			)
-		)
-	)
-	if (any(is.na(markTypes))){
-		stop(paste0("Unable to infer mark type for mark(s):", paste(marks[is.na(markTypes)], collapse=",")))
+	markTypes <- marks
+	markTypes[grepl(patternHistoneChip, markTypes)] <- "ChIPseq"
+	markTypes[markTypes=="accessibility"] <- "Acc"
+	markTypes[markTypes=="ATACseq"] <- "Acc"
+	isValid <- markTypes %in% c("DNAmeth", "ChIPseq", "Acc")
+	if (any(!isValid)){
+		stop(paste0("Unable to infer mark type for mark(s):", paste(unique(marks[!isValid]), collapse=",")))
 	}
 	return(factor(markTypes))
 }
