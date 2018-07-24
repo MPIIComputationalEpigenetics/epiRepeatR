@@ -266,10 +266,6 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 	function(.Object, baseDir){
 		# TODO:
 		# - avoid full paths to scripts in inst/exdata --> make execution environment independent
-		analysisSteps <- c(
-			"seqReads", "bamExtract", "repeatAlignment",
-			"methCalling", "chipQuantification",
-			"plotRepeatGroupTreesMeth", "plotRepeatMarkTree")
 
 
 		ft <- getFileTable(.Object)
@@ -708,7 +704,7 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 		for (sn in sampleNames){
 			stepId <- paste(sn,dn,stepName,sep="_")
 			inds.input <- ft[,"sampleName"]==sn & ft[, "dataType"]=="ATACseq" & (ft[, "analysisStep"] %in% c("repeatAlignment", "repeatReadCountsFromGenomeAlignment"))
-			doStep <- any(stepInds.input)
+			doStep <- any(inds.input)
 			if (doStep){
 				if (sum(inds.input)>1){
 					logger.warning(c("Multiple input bam files found for step",stepId,"--> picking the first one"))
