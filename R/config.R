@@ -11,7 +11,7 @@
 .config$aligner.chip <- "chip_bwa" # ChIP-seq aligner
 .config$alignment.params.chip.bwa <- "-t 8 -q 20 -b" # to be appended to BWA ChIP-seq aligner call
 .config$alignment.params.chip.bowtie2 <- "--local --sensitive-local -p 8" # to be appended to Bowtie2 ChIP-seq aligner call
-.config$aligner.atac <- "atac_bt2" # ATAC-seq aligner
+.config$aligner.atac <- "atac_bowtie2" # ATAC-seq aligner
 .config$alignment.params.atac.bowtie2 <- "--local --sensitive-local -p 8" # to be appended to Bowtie2 ChIP-seq aligner call
 .config$samtools.exec <- "samtools" # location of the samtools executable
 .config$chip.mergeInput <- FALSE

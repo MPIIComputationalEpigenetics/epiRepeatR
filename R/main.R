@@ -8,12 +8,13 @@
 #' @param resetToStep If resuming an existing analysis or running from an existing analysis directory, reset the analysis
 #'                    to the beginning of the specified analysis step prior to running the pipeline
 #' @param submission  Type of submission to be used. "system" (default) for system calls "sge" for Sun Grid Engine.
-#' @param cmdrArgs    Named list of additional arguments for the construction of the CommandR object used for executing the pipeline. 
+#' @param cmdrArgs    Named list of additional arguments for the construction of the CommandR object used for executing the pipeline.
+#' @param ...         arguments passed on to the submission \code{run} command
 #' @return nothing of particular interest
 #'
 #' @author Fabian Mueller
 #' @export
-runAnalysis <- function(anaDir, fileTable=NULL, resetToStep=NULL, submission="system", cmdrArgs=list()){
+runAnalysis <- function(anaDir, fileTable=NULL, resetToStep=NULL, submission="system", cmdrArgs=list(), ...){
 	logger.start(fname=NA)
 	newAna <- TRUE
 	logger.start("Analysis preliminaries")
@@ -65,5 +66,5 @@ runAnalysis <- function(anaDir, fileTable=NULL, resetToStep=NULL, submission="sy
 		logger.error("Could not execute pipeline: unknown submission type.")
 	}
 
-	run(pipr, cmdr, logCommands=TRUE)
+	run(pipr, cmdr, logCommands=TRUE, ...)
 }
