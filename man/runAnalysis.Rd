@@ -5,7 +5,7 @@
 \title{runAnalysis}
 \usage{
 runAnalysis(anaDir, fileTable = NULL, resetToStep = NULL,
-  submission = "system", cmdrArgs = list())
+  submission = "system", cmdrArgs = list(), ...)
 }
 \arguments{
 \item{anaDir}{Analysis directory. epiRepeatR will manage this directory. If it is non-existing a new analysis will be launched
@@ -19,6 +19,8 @@ to the beginning of the specified analysis step prior to running the pipeline}
 \item{submission}{Type of submission to be used. "system" (default) for system calls "sge" for Sun Grid Engine.}
 
 \item{cmdrArgs}{Named list of additional arguments for the construction of the CommandR object used for executing the pipeline.}
+
+\item{...}{arguments passed on to the submission \code{run} command}
 }
 \value{
 nothing of particular interest
