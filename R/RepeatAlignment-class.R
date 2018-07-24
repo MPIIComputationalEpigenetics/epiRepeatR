@@ -109,7 +109,7 @@ setMethod("getReadCounts", signature(.obj="RepeatAlignment"),
 			}
 			if (useIdxStats){
 				#faster version using bam idxstats
-				bamFn <- Rsamtools::path(bf)
+				bamFn <- BiocGenerics::path(bf)
 				mappedReadCounts <- countMappedReads.bam.perSeq(bamFn)
 				res <- lapply(refNames,FUN=function(ss){
 					if (is.element(ss,names(mappedReadCounts))){

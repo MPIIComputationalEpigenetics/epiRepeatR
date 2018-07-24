@@ -77,7 +77,7 @@ setMethod("getReadCounts", signature(.obj="GenomeAlignment"),
 		if (aggregate){
 			res <- lapply(res, FUN=function(x){sum(elementMetadata(x)[,"numReads"])})
 			if (addGlobalCounts){
-				totalC <- countAllReads.bam(Rsamtools::path(bfo))
+				totalC <- countAllReads.bam(BiocGenerics::path(bfo))
 				mappedEst <- sum(unlist(res))
 				# cannot quickly and acurately determine how many reads are mapped or unmapped since one read might overlap multiple instances
 				# just provide estimates here
