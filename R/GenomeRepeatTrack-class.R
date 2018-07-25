@@ -33,14 +33,10 @@ setMethod("initialize", "GenomeRepeatTrack",
 		if (any(missingCols)){
 			stop(paste0("The following columns were not found in the repeat track annotation", paste(columnMatching[missingCols], collapse=",")))
 		}
-		repeatTrackGr <- GRanges(
-			seqnames=tt[,columnMatching["chrom"]],
-			ranges=IRanges(start=tt[,columnMatching["start"]], end=tt[,columnMatching["end"]]),
-			strand=tt[,columnMatching["strand"]],
-			seqinfo=Seqinfo(genome=genome)
-		)
+
+		repeatTrackGr <- muRtools::df2granges(tt, ids=NULL, chrom.col=columnMatching["chrom"], start.col=columnMatching["start"], end.col=columnMatching["end"], strand.col=columnMatching["strand"], coord.format="B1RI", assembly=genome, doSort=TRUE, adjNumChromNames=TRUE) 
 		repeatTrackGr <- muRtools::setGenomeProps(repeatTrackGr, genome, onlyMainChrs=TRUE, dropUnknownChrs=TRUE) #drop chromosomes except for the main ones
-		elementMetadata(repeatTrackGr) <- tt[,columnMatching[c("repName", "repClass", "repFamily")]]
+		
 		reps <- elementMetadata(repeatTrackGr)[,"repName"]
 		repNames <- sort(unique(reps))
 		repInstances <- lapply(repNames, FUN=function(rn){
