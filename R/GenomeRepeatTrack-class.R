@@ -39,6 +39,7 @@ setMethod("initialize", "GenomeRepeatTrack",
 			strand=tt[,columnMatching["strand"]],
 			seqinfo=Seqinfo(genome=genome)
 		)
+		repeatTrackGr <- muRtools::setGenomeProps(repeatTrackGr, genome, onlyMainChrs=TRUE, dropUnknownChrs=TRUE) #drop chromosomes except for the main ones
 		elementMetadata(repeatTrackGr) <- tt[,columnMatching[c("repName", "repClass", "repFamily")]]
 		reps <- elementMetadata(repeatTrackGr)[,"repName"]
 		repNames <- sort(unique(reps))
@@ -64,5 +65,18 @@ if (!isGeneric("getRepeatInstances")) setGeneric("getRepeatInstances", function(
 setMethod("getRepeatInstances", signature(.obj="GenomeRepeatTrack"),
 	function(.obj){
 		return(.obj@repInstances)
+	}
+)
+
+if (!isGeneric("getRepeatGenomeCovg")) setGeneric("getRepeatGenomeCovg", function(.obj) standardGeneric("getRepeatGenomeCovg"))
+setMethod("getRepeatGenomeCovg", signature(.obj="GenomeRepeatTrack"),
+	function(.obj){
+		covgBases <- sapply(.obj@repInstances, FUN=function(x){
+			sum(width(reduce(x, min.gapwidth=0L, ignore.strand=TRUE)))
+		})
+		names(covgBases) <- names(.obj@repInstances)
+		# genomeLength <- sum(seqlengths(.obj@repInstances))
+		# covgBases <- covgBases/genomeLength
+		return(covgBases)
 	}
 )

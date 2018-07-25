@@ -119,6 +119,51 @@ setMethod("addRepeatInfoFromEmbl", signature(.Object="RepeatReference"),
 	}
 )
 
+if (!isGeneric("addRepeatInfoFromGenomeTrack")) setGeneric("addRepeatInfoFromGenomeTrack", function(.Object, ...) standardGeneric("addRepeatInfoFromGenomeTrack"))
+#' addRepeatInfoFromGenomeTrack-methods
+#'
+#' Add annotation contained a genomic ranges track to the reference of REs
+#'
+#' @param .Object         \code{\linkS4class{RepeatReference}} object or \code{NULL} for default
+#' @param grt    		  \code{\linkS4class{GenomeRepeatTrack}} object
+#' @return modified \code{\linkS4class{RepeatReference}} object containing derived annotation
+#'
+#' @rdname addRepeatInfoFromGenomeTrack-RepeatReference-method
+#' @docType methods
+#' @aliases addRepeatInfoFromGenomeTrack
+#' @aliases addRepeatInfoFromGenomeTrack,RepeatReference-method
+#' @author Fabian Mueller
+#' @noRd
+## @export
+setMethod("addRepeatInfoFromGenomeTrack", signature(.Object="RepeatReference"),
+	function(.Object, grt=NULL){
+		# check if there is an embl file corresponding to the reference fasta file
+		if (is.null(grt)){
+			genomeAss <- .config$assembly
+			if (is.null(genomeAss)){
+				if (.Object@species=="human"){
+					genomeAss <- "hg38"
+				} else if (.Object@species=="mouse"){
+					genomeAss <- "mm10"
+				} else {
+					stop("Unknown species")
+				}
+			}
+			grt <- GenomeRepeatTrack(genomeAss)
+		}
+		repIds <- getRepeatIds(.Object)
+		numBases <- getRepeatGenomeCovg(grt)
+		if (length(setdiff(repIds, names(numBases)))>0){
+			stop("Not all repeats are annotated in the embl file")
+		}		
+		.Object@repeatInfo[repIds,"baseCovg"] <- numBases[repIds]
+		genomeLength <- sum(seqlengths(getRepeatInstances(grt)))
+		.Object@repeatInfo[repIds,"percCovg"] <- numBases[repIds]/genomeLength
+		return(.Object)
+	}
+)
+
+
 if (!isGeneric("filterRepeats_wl")) setGeneric("filterRepeats_wl", function(.Object, ...) standardGeneric("filterRepeats_wl"))
 #' filterRepeats_wl-methods
 #'

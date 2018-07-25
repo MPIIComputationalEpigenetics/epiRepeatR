@@ -721,6 +721,7 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 			inds.input <- ft[,"sampleName"]==sn & ft[, "dataType"]=="ATACseq" & (ft[, "analysisStep"] %in% c("repeatAlignment", "repeatReadCountsFromGenomeAlignment"))
 			doStep <- any(inds.input)
 			if (doStep){
+				processGenomeRepeatTrack <- TRUE
 				if (sum(inds.input)>1){
 					logger.warning(c("Multiple input bam files found for step",stepId,"--> picking the first one"))
 				}
@@ -818,6 +819,10 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 				"--config", cfgSavePath.forPipe,
 				"--anaman", anamanSavePath.forPipe
 			)
+
+			if (processGenomeRepeatTrack){
+				args.repeatEpigenomeCollection <- c(args.repeatEpigenomeCollection, c("--grt", repTrackPath.forPipe))
+			}
 
 			ft <- addFile(ft, outFn, NA, NA, NA, stepName) #fileTable, fileName, dataType, mark, sampleName, analysisStep
 

@@ -3,7 +3,7 @@
 .config$rscript.exec <- "Rscript"
 .config$species <-  "human"
 .config$assembly <-  NULL
-# .config$refFasta <- "/TL/deep-external01/archive00/references/assemblies/RepBase19.07/human.fasta/humrep.fa"
+# .config$refFasta <- "/home/groups/wjg/muellerf/resources/references/repeats/RepBase20.04/Homo_sapiens_all.fa"
 .config$refFasta <- "/TL/deep-external01/archive00/references/assemblies/RepBase20.04/Homo_sapiens_all.fa"
 .config$refEmbl  <- NULL 
 .config$aligner.bs <- "bsmap"

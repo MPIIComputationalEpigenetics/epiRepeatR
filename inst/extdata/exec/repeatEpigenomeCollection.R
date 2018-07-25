@@ -5,6 +5,7 @@ ap$add_argument("-i", "--in", action="store", dest="inFileTable", help="Input fi
 ap$add_argument("-o", "--out", action="store", dest="output", help="Output file name (RDS)")
 ap$add_argument("-c", "--config", action="store", help="Config file (json)")
 ap$add_argument("-a", "--anaman", action="store", help="Analysis manager object (rds)")
+ap$add_argument("-g", "--grt", action="store", dest="genomeRepTrack", help="(optional) Enables parsing from genome methylation calls. Specifies Path to an RDS file containing a GenomeRepeatTrack object.")
 cmdArgs <- ap$parse_args() #problem: too long of a command line
 logger.cmd.args(cmdArgs)
 
@@ -26,5 +27,12 @@ if (length(invalidSamples)>0){
 	logger.error(c("The following samples do not exist in the annotation table:",paste(invalidSamples,collapse=",")))
 }
 
-rec <- epiRepeatR:::RepeatEpigenomeCollection(quantFns, sampleNames, markNames, annot)
+repRef <- epiRepeatR:::RepeatReference()
+if (!is.null(cmdArgs$genomeRepTrack)){
+	logger.info("Adding info from genome repeat track to repeat reference")
+	grt <- readRDS(cmdArgs$genomeRepTrack)
+	repRef <- epiRepeatR:::addRepeatInfoFromGenomeTrack(repRef, grt=grt)
+}
+
+rec <- epiRepeatR:::RepeatEpigenomeCollection(quantFns, sampleNames, markNames, annot, repRef=repRef)
 saveRDS(rec, cmdArgs$output)
