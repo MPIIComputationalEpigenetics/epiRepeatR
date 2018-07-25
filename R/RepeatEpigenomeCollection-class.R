@@ -344,7 +344,7 @@ setMethod("getRepeatScores", signature(.Object="RepeatEpigenomeCollection"),
 			scoreFun <- function(x){
 				x$log2fc
 			}
-		} else if (markType == "ATACseq"){
+		} else if (markType == "Acc"){
 			scoreFun <- function(x){
 				x$normCount
 			}
@@ -429,7 +429,7 @@ setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 			covgFun <- function(x){
 				x$readStats["numReads_chip"]
 			}
-		} else if (markType == "ATACseq"){
+		} else if (markType == "Acc"){
 			covgFun <- function(x){
 				x$readStats["numReads"]
 			}
