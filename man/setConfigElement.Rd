@@ -38,11 +38,20 @@ Set a configuration item to a given value
   \item{\bold{\code{alignment.params.bs}}\code{ = "-g 3 -v 0.2"}}{
        Additional parameters appended during the command line call to the bisulfite aligner.
   }
-  \item{\bold{\code{aligner.chip}}\code{ = "bwa_chip"}}{
-       Aligner used for mapping ChIP-seq reads to the repeat reference. Currently only "chip_bwa" is supported.
+  \item{\bold{\code{aligner.chip}}\code{ = "chip_bwa"}}{
+       Aligner used for mapping ChIP-seq reads to the repeat reference. Currently only "chip_bwa" and "chip_bowtie2" are supported.
   }
-  \item{\bold{\code{alignment.params.chip.bwa}}\code{ = "-t 8 -q 20 -b"}}{
+  \item{\bold{\code{alignment.params.chip.bwa}}\code{ = "-t 8 -q 20"}}{
        Additional parameters appended during the command line call to the BWA ChIP-seq aligner.
+  }
+  \item{\bold{\code{alignment.params.chip.bowtie2}}\code{ = "-t 8 -q 20"}}{
+       Additional parameters appended during the command line call to the bowtie2 ChIP-seq aligner.
+  }
+  \item{\bold{\code{aligner.atac}}\code{ = "atac_bowtie2"}}{
+       Aligner used for mapping ATAC-seq reads to the repeat reference. Currently only "atac_bowtie2" is supported.
+  }
+  \item{\bold{\code{alignment.params.atac.bowtie2}}\code{ = "-t 8 -q 20"}}{
+       Additional parameters appended during the command line call to the bowtie2 ATAC-seq aligner.
   }
   \item{\bold{\code{samtools.exec}}\code{ = "samtools"}}{
        Location of the samtools executable.

@@ -13,11 +13,11 @@ loadConfig(cmdArgs$config)
 if (cmdArgs$genomeRepTrack){
 	logger.info("Quantify enrichment from genome alignment")
 	ga.atac <- readRDS(cmdArgs$input)
-	quantObj <- epiRepeatR:::normCounts(ga.atac)
+	quantObj <- epiRepeatR:::normCounts(ga.atac, method="zscore")
 } else {
 	logger.info("Quantify enrichment from repeat alignment")
 	ra.atac <- epiRepeatR:::RepeatAlignment(cmdArgs$input)
-	quantObj <- epiRepeatR:::normCounts(ra.atac, useIdxStats=TRUE)
+	quantObj <- epiRepeatR:::normCounts(ra.atac, method="zscore", useIdxStats=TRUE)
 }
 saveRDS(quantObj, cmdArgs$output)
 
