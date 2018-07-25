@@ -1,6 +1,6 @@
-library(argparse)
+suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(epiRepeatR))
-library(ggplot2)
+suppressPackageStartupMessages(library(ggplot2))
 ap <- ArgumentParser()
 ap$add_argument("-i", "--in", action="store", dest="inFileTable", help="Input file table (tab-separated).")
 ap$add_argument("-o", "--out", action="store", dest="output", help="Output directory")

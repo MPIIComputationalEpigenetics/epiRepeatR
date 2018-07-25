@@ -205,6 +205,10 @@ setMethod("getSamples", signature(.Object="RepeatEpigenomeCollection"),
 			return(sns)
 		} else {
 			smt <- getSampleMarkTable(.Object)
+			if (!all(marks %in% getMarks(.Object))){
+				logger.warning(c("RepeatEpigenomeCollection object does not contain marks:", paste(setdiff(marks, getMarks(.Object)), collapse=","), "--> no samples returned"))
+				return(c())
+			}
 			snInds <- rowAlls(smt[,marks, drop=FALSE])
 			return(sns[snInds])
 		}
@@ -616,6 +620,70 @@ setMethod("filterRepRefChip", signature(.Object="RepeatEpigenomeCollection"),
 		survive <- matrix(FALSE, nrow=nReps, ncol=length(chipSamples))
 		for (mn in chipMarks){
 			survive <- survive | (numReadsTabs.chip[[mn]] >= minReads & numReadsTabs.input[[mn]] >= minReads)
+		}
+		survive <- apply(survive,1,all)
+		repRef.filtered <- filterRepeats_wl(repRef, repRefNames[survive])
+
+		res@repRef <- repRef.filtered
+		return(res)
+	}
+)
+
+if (!isGeneric("filterRepRefAcc")) setGeneric("filterRepRefAcc", function(.Object, ...) standardGeneric("filterRepRefAcc"))
+#' filterRepRefAcc-methods
+#'
+#' Given a \code{\linkS4class{RepeatEpigenomeCollection}} object, remove repeats that do not fulfill
+#' the coverage criteria in any sample
+#'
+#' @param .Object	      \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param minReads 		  threshold for the minimum number of reads required to cover a repeat
+#' @return modified \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' 
+#' @details
+#' A repeat must fulfill the criteria in all samples in order to be retained
+#'
+#' @rdname filterRepRefAcc-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases filterRepRefAcc
+#' @aliases filterRepRefAcc,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
+setMethod("filterRepRefAcc", signature(.Object="RepeatEpigenomeCollection"),
+	function(.Object,  minReads=getConfigElement("plotRepTree.meth.minReads")){
+		res <- .Object
+		repRef <- getRepRef(.Object)
+		repRefNames <- getRepeatIds(repRef)
+		nReps <- length(repRefNames)
+		zeroVec <- rep(0, nReps)
+
+		accMarks <- getMarks(.Object)[inferMarkTypes(getMarks(.Object))=="Acc"]
+		if (length(accMarks) < 1){
+			logger.warning("No accessibility mark found")
+			return(res)
+		}
+		smt <- getSampleMarkTable(.Object)[, accMarks, drop=FALSE]
+		accSamples <- getSamples(.Object)[rowAnys(smt)]
+		if (length(accSamples) < 1){
+			logger.warning("No sample with accessibility measurements found. --> skipping filtering")
+			return(.Object)
+		}
+		numReadsTabs.acc <- lapply(accMarks, FUN=function(mn){
+			do.call("cbind",lapply(.Object@epiQuant[accSamples], FUN=function(x){
+				rr <- zeroVec
+				if (length(x[[mn]][repRefNames]) > 0) {
+					rr <- sapply(x[[mn]][repRefNames], FUN=function(r){
+						if (is.null(r)) return(0) else return(r$readStats["numReads"])
+					})
+				}
+				return(rr)
+			}))
+		})
+		names(numReadsTabs.acc) <- accMarks
+
+		# keep repeats in which for any acc mark, all samples fullfill the read coverage criterion
+		survive <- matrix(FALSE, nrow=nReps, ncol=length(accSamples))
+		for (mn in accMarks){
+			survive <- survive | numReadsTabs.acc[[mn]] >= minReads
 		}
 		survive <- apply(survive,1,all)
 		repRef.filtered <- filterRepeats_wl(repRef, repRefNames[survive])

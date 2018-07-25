@@ -1,4 +1,4 @@
-library(argparse)
+suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(epiRepeatR))
 ap <- ArgumentParser()
 ap$add_argument("-i", "--in", action="store", dest="inFileTable", help="Input file table (tab-separated). Should contain three columns (with headers): fileName, sampleName, markName")

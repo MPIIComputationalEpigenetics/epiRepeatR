@@ -316,6 +316,7 @@ createRepPlot_markTree <- function(
 
 	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs, minCpGcov=minCpGcov)
 	rec <- filterRepRefChip(rec, minReads=minReads)
+	rec <- filterRepRefAcc(rec, minReads=minReads)
 	repRef <- getRepRef(rec)
 	if (length(getRepeatIds(repRef)) < 1) logger.error("No repeat sequence retained after filtering")
 
@@ -331,7 +332,7 @@ createRepPlot_markTree <- function(
 	scoreMat <- do.call("cbind", lapply(markLvls, FUN=function(mn){
 		rr <- getRepeatScores(rec, mn, minCpGcov=minCpGcov)
 		mt <- inferMarkTypes(mn)
-		if (is.element(mt, c("ChIPseq", "ATACseq"))){
+		if (is.element(mt, c("ChIPseq", "Acc"))){
 			rr <- normalizeMatrix(rr, method=normChipMethod)
 		}
 		return(rr)
@@ -363,9 +364,11 @@ createRepPlot_markTree <- function(
 		colGrads[[indMeth]] <- colorpanel(100,"#EDF8B1","#41B6C4","#081D58")
 		zlims[[indMeth]] <- c(0,1)
 	}
-	indAtac <- match("ATACseq", markLvls)
-	if (!is.na(indAtac)){
-		zlims[[indAtac]] <- c(0,1)
+	indAcc <- match("Acc", inferMarkTypes(markLvls))
+	if (!is.na(indAcc) && length(indAcc)){
+		for (i in indAcc){
+			zlims[[i]] <- c(0,1)
+		}
 	}
 
 	fn <- file.path(plotDir, paste0("repeatTree_markSummary",".pdf"))

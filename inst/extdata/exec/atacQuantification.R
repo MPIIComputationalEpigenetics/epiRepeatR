@@ -1,4 +1,4 @@
-library(argparse)
+suppressPackageStartupMessages(library(argparse))
 suppressPackageStartupMessages(library(epiRepeatR))
 ap <- ArgumentParser()
 ap$add_argument("-i", "--in", action="store", dest="input", help="Input file of aligned ATAC-seq reads (bam)")
