@@ -81,7 +81,8 @@ repPlot_groupSummary <- function(
 		addBoxplots=FALSE,
 		dendroMethod="repeatFamily"){
 
-	require(diagram)
+	suppressPackageStartupMessages(require(diagram))
+	
 	repTree <- RepeatTree(repRef, method=dendroMethod)
 	# repTree <- RepeatTree(repRef, method="hierClust")
 	orderedLabels       <- getDendrogramMembers(repTree, rev=FALSE)
@@ -237,7 +238,8 @@ createRepPlot_groupSummaryTrees_meth <- function(
 		minReads=getConfigElement("plotRepTree.meth.minReads"),
 		minCpGs=getConfigElement("plotRepTree.meth.minCpGs"),
 		minCpGcov=getConfigElement("meth.minCpGcov")){
-	require(gplots)
+	suppressPackageStartupMessages(require(gplots))
+	suppressPackageStartupMessages(require(diagram))
 
 	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs, minCpGcov=minCpGcov)
 	repRef <- getRepRef(rec)
@@ -314,7 +316,8 @@ createRepPlot_markTree <- function(
 		minReads=getConfigElement("plotRepTree.meth.minReads"),
 		minCpGs=getConfigElement("plotRepTree.meth.minCpGs"),
 		minCpGcov=getConfigElement("meth.minCpGcov")){
-	require(gplots)
+	suppressPackageStartupMessages(require(gplots))
+	suppressPackageStartupMessages(require(diagram))
 
 	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs, minCpGcov=minCpGcov)
 	rec <- filterRepRefChip(rec, minReads=minReads)
