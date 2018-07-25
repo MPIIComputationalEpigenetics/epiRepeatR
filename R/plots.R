@@ -82,12 +82,12 @@ repPlot_groupSummary <- function(
 		dendroMethod="repeatFamily"){
 
 	suppressPackageStartupMessages(require(diagram))
-	
+
 	repTree <- RepeatTree(repRef, method=dendroMethod)
 	# repTree <- RepeatTree(repRef, method="hierClust")
 	orderedLabels       <- getDendrogramMembers(repTree, rev=FALSE)
 	orderedLabels4plot  <- getDendrogramMembers(repTree, rev=TRUE)
-	scores.ordered4plot <- scores[orderedLabels4plot,]
+	scores.ordered4plot <- scores[orderedLabels4plot,,drop=FALSE]
 	
 	#setting the coordinates for the elements
 	Ngrps <- length(grpInfo)
