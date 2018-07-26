@@ -686,6 +686,14 @@ setMethod("filterRepRefAcc", signature(.Object="RepeatEpigenomeCollection"),
 			survive <- survive | numReadsTabs.acc[[mn]] >= minReads
 		}
 		survive <- apply(survive,1,all)
+		# keep repeats that have NA scores for at least one sample in any acc mark
+		survive.na <- matrix(FALSE, nrow=nReps, ncol=length(accSamples))
+		for (mn in accMarks){
+			scs <- getRepeatScores(.Object, mn)
+			survive.na <- survive.na | !rowAlls(is.na(scs))
+		}
+		survive <- survive & survive.na
+
 		repRef.filtered <- filterRepeats_wl(repRef, repRefNames[survive])
 
 		res@repRef <- repRef.filtered

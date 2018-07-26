@@ -234,9 +234,10 @@ setMethod("normCounts", signature(.obj="RepeatAlignment"),
 
 		eFrac <- NULL
 		if (method=="genomeScale"){
-			if (is.null(names(abund))) stop("invalid abundance vector: should be named vector of expected repeat counts")
-			if (!all(names(rc) %in% names(abund))) stop("invalid abundance vector: should contain expected counts for all repeats in the reference")
-			abund <- abund[names(rc)]
+			if (is.null(names(abund))) logger.error("invalid abundance vector: should be named vector of expected repeat counts")
+			idx <- names(rc) %in% names(abund)
+			if (!all(idx)) logger.warning("abundance vector should contain expected counts for all repeats in the reference")
+			abund <- abund[names(rc)[idx]]
 			eFrac <- abund / sum(abund, na.rm=TRUE)
 		}
 
