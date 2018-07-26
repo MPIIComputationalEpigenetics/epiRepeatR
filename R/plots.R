@@ -372,7 +372,7 @@ createRepPlot_markTree <- function(
 	indAcc <- match("Acc", inferMarkTypes(markLvls))
 	if (!is.na(indAcc) && length(indAcc)){
 		for (i in indAcc){
-			zlims[[i]] <- c(0,1)
+			zlims[[i]] <- c(-10,10)
 		}
 	}
 
