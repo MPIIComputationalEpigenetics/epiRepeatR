@@ -732,7 +732,8 @@ setMethod("buildPipeline", signature(.Object="AnalysisManager"),
 					rscript,
 					"--in", inBamFn,
 					"--out", outFn,
-					"--config", cfgSavePath.forPipe
+					"--config", cfgSavePath.forPipe,
+					"--grt", repTrackPath.forPipe
 				))
 				if (isGenomeData){
 					curArgs <- c(curArgs, c("--genome"))

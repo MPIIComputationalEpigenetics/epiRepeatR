@@ -141,16 +141,25 @@ setMethod("computeEnrichment", signature(.obj="GenomeAlignment", inputObj="Genom
 
 if (!isGeneric("normCounts")) setGeneric("normCounts", function(.obj, ...) standardGeneric("normCounts"))
 setMethod("normCounts", signature(.obj="GenomeAlignment"),
-	function(.obj, method="scale", ...){
+	function(.obj, method="scale", abund=NULL, ...){
 		if (is.null(.obj@readCounts)){
 			logger.status("Getting read counts")
 			.obj <- storeReadCounts(.obj, ...)
 		}
+
 		rc <- getReadCounts(.obj)
 		rcVec <- unlist(rc)
 		totalReads <- sum(rcVec)
 		mu <- mean(rcVec, na.rm=TRUE)
 		sigma <- sd(rcVec, na.rm=TRUE)
+
+		eFrac <- NULL
+		if (method=="genomeScale"){
+			if (is.null(names(abund))) stop("invalid abundance vector: should be named vector of expected repeat counts")
+			if (!all(names(rc) %in% names(abund))) stop("invalid abundance vector: should contain expected counts for all repeats in the reference")
+			abund <- abund[names(rc)]
+			eFrac <- abund / sum(abund, na.rm=TRUE)
+		}
 
 		res <- lapply(names(rc),FUN=function(ss){
 			normCount <- NA
@@ -158,6 +167,8 @@ setMethod("normCounts", signature(.obj="GenomeAlignment"),
 				normCount <- rc[[ss]]/totalReads
 			} else if (method=="zscore" && rc[[ss]] > 0){
 				normCount <- (rc[[ss]]-mu)/sigma
+			} else if (method=="genomeScale" && rc[[ss]] > 0){
+				normCount <- rc[[ss]] / (totalReads * eFrac[ss]) # number of reads mapping over the expected number of reads mapping
 			}
 			rr <- list(
 				normCount=normCount,

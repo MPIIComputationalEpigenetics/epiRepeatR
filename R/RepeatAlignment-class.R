@@ -204,7 +204,11 @@ if (!isGeneric("normCounts")) setGeneric("normCounts", function(.obj, inputObj, 
 #' Normalize the read counts across repeat elements
 #'
 #' @param .obj        \code{\linkS4class{RepeatAlignment}} object
-#' @param method      normalization method. Currently only \code{"scale"} and \code{"zscore"} are supported
+#' @param method      normalization method. Currently only \code{"scale"} (scale to the sum of counts), \code{"zscore"}
+#'                    and \code{"genomeScale"} (scale to relative repeat abundance) are supported
+#' @param abund       Named vector of repeat abundances (e.g. number of bases covered by each repeat element).
+#'                    Names must correspond to the names of quantified counts of repeats.
+#'                    Only relevant for the \code{"genomeScale"} method.
 #' @param ...          Arguments passed to \code{storeReadCounts,RepeatAlignment-method}
 #' @return \code{RepeatNormReadCount} object (S3 object). Essentially a list containing the normalized read counts
 #'         and the number of reads mapping to element for each RE in the reference
@@ -217,7 +221,7 @@ if (!isGeneric("normCounts")) setGeneric("normCounts", function(.obj, inputObj, 
 #' @noRd
 ## @export
 setMethod("normCounts", signature(.obj="RepeatAlignment"),
-	function(.obj, method="scale", ...){
+	function(.obj, method="scale", abund=NULL, ...){
 		if (is.null(.obj@readCounts)){
 			logger.status("Getting read counts")
 			.obj <- storeReadCounts(.obj, ...)
@@ -228,12 +232,22 @@ setMethod("normCounts", signature(.obj="RepeatAlignment"),
 		mu <- mean(rcVec, na.rm=TRUE)
 		sigma <- sd(rcVec, na.rm=TRUE)
 
+		eFrac <- NULL
+		if (method=="genomeScale"){
+			if (is.null(names(abund))) stop("invalid abundance vector: should be named vector of expected repeat counts")
+			if (!all(names(rc) %in% names(abund))) stop("invalid abundance vector: should contain expected counts for all repeats in the reference")
+			abund <- abund[names(rc)]
+			eFrac <- abund / sum(abund, na.rm=TRUE)
+		}
+
 		res <- lapply(names(rc),FUN=function(ss){
 			normCount <- NA
 			if (method=="scale" && rc[[ss]] > 0){
 				normCount <- rc[[ss]]/totalReads
 			} else if (method=="zscore" && rc[[ss]] > 0){
 				normCount <- (rc[[ss]]-mu)/sigma
+			} else if (method=="genomeScale" && rc[[ss]] > 0){
+				normCount <- rc[[ss]] / (totalReads * eFrac[ss]) # number of reads mapping over the expected number of reads mapping
 			}
 			rr <- list(
 				normCount=normCount,
