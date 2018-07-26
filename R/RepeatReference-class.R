@@ -154,7 +154,7 @@ setMethod("addRepeatInfoFromGenomeTrack", signature(.Object="RepeatReference"),
 		repIds <- getRepeatIds(.Object)
 		numBases <- getRepeatGenomeCovg(grt)
 		if (length(setdiff(repIds, names(numBases)))>0){
-			stop("Not all repeats are annotated in the embl file")
+			stop("Not all repeats are annotated in the GenomeRepeatTrack")
 		}		
 		.Object@repeatInfo[repIds,"baseCovg"] <- numBases[repIds]
 		genomeLength <- sum(seqlengths(getRepeatInstances(grt)))
