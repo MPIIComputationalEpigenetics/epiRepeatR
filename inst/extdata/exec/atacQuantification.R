@@ -17,6 +17,7 @@ loadConfig(cmdArgs$config)
 abund <- NULL
 if (METHOD=="genomeScale"){
 	if (!is.null(cmdArgs$genomeRepTrack)){
+		logger.info("Retrieving abundances from genome repeat track")
 		grt <- readRDS(cmdArgs$genomeRepTrack)
 		abund <- epiRepeatR:::getRepeatGenomeCovg(grt)
 	}
