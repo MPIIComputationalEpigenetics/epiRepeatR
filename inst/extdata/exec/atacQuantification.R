@@ -9,25 +9,26 @@ ap$add_argument("-g", "--grt", action="store", dest="genomeRepTrack", help="Enab
 cmdArgs <- ap$parse_args()
 logger.cmd.args(cmdArgs)
 
-METHOD="zscore"
+# METHOD <- "zscore"
+METHOD <- "genomeScale"
 
 loadConfig(cmdArgs$config)
 
-eCounts <- NULL
+abund <- NULL
 if (METHOD=="genomeScale"){
 	if (!is.null(cmdArgs$genomeRepTrack)){
 		grt <- readRDS(cmdArgs$genomeRepTrack)
-		eCounts <- epiRepeatR:::getRepeatGenomeCovg(grt)
+		abund <- epiRepeatR:::getRepeatGenomeCovg(grt)
 	}
 }
 if (cmdArgs$genomeRepTrack){
 	logger.info("Quantify enrichment from genome alignment")
 	ga.atac <- readRDS(cmdArgs$input)
-	quantObj <- epiRepeatR:::normCounts(ga.atac, method=METHOD, eCounts=eCounts)
+	quantObj <- epiRepeatR:::normCounts(ga.atac, method=METHOD, abund=abund)
 } else {
 	logger.info("Quantify enrichment from repeat alignment")
 	ra.atac <- epiRepeatR:::RepeatAlignment(cmdArgs$input)
-	quantObj <- epiRepeatR:::normCounts(ra.atac, method=METHOD, eCounts=eCounts, useIdxStats=TRUE)
+	quantObj <- epiRepeatR:::normCounts(ra.atac, method=METHOD, abund=abund, useIdxStats=TRUE)
 }
 saveRDS(quantObj, cmdArgs$output)
 

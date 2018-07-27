@@ -248,7 +248,7 @@ setMethod("normCounts", signature(.obj="RepeatAlignment"),
 			} else if (method=="zscore" && rc[[ss]] > 0){
 				normCount <- (rc[[ss]]-mu)/sigma
 			} else if (method=="genomeScale" && rc[[ss]] > 0){
-				normCount <- rc[[ss]] / (totalReads * eFrac[ss]) # number of reads mapping over the expected number of reads mapping
+				normCount <- log2(rc[[ss]] / (totalReads * eFrac[ss])) # number of reads mapping over the expected number of reads mapping
 			}
 			rr <- list(
 				normCount=normCount,
