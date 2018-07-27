@@ -369,12 +369,12 @@ createRepPlot_markTree <- function(
 		colGrads[[indMeth]] <- colorpanel(100,"#EDF8B1","#41B6C4","#081D58")
 		zlims[[indMeth]] <- c(0,1)
 	}
-	# indAcc <- match("Acc", inferMarkTypes(markLvls))
-	# if (!is.na(indAcc) && length(indAcc)){
-	# 	for (i in indAcc){
-	# 		zlims[[i]] <- c(-10,10)
-	# 	}
-	# }
+	indAcc <- match("Acc", inferMarkTypes(markLvls))
+	if (!is.na(indAcc) && length(indAcc)){
+		for (i in indAcc){
+			zlims[[i]] <- c(-5,5)
+		}
+	}
 
 	fn <- file.path(plotDir, paste0("repeatTree_markSummary",".pdf"))
 	pdf(fn, width=20, height=100)
