@@ -5,7 +5,7 @@ ap$add_argument("-i", "--in", action="store", dest="input", help="Input file of 
 ap$add_argument("-o", "--out", action="store", dest="output", help="Output file (rds)")
 ap$add_argument("-c", "--config", action="store", help="Config file (json)")
 ap$add_argument("-g", "--genome", action="store_true", dest="genomeRepTrack", default=FALSE, help="Enables parsing from genome methylation calls.")
-ap$add_argument("-g", "--grt", action="store", dest="genomeRepTrack", help="Enables parsing from genome methylation calls. Specifies Path to an RDS file containing a GenomeRepeatTrack object.")
+ap$add_argument("--grt", action="store", dest="genomeRepTrack", help="Enables parsing from genome methylation calls. Specifies Path to an RDS file containing a GenomeRepeatTrack object.")
 cmdArgs <- ap$parse_args()
 logger.cmd.args(cmdArgs)
 
