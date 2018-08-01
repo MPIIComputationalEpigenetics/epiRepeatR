@@ -7,7 +7,8 @@ suppressPackageStartupMessages(library(epiRepeatR))
 # load_all(pkgName)
 
 library(muRtools) #plotting and convenience
-library(RnBeads) #reports
+library(muLogR) #logging
+library(muReportR) #reports
 
 # #testing example
 # cmdArgs <- list(
@@ -101,6 +102,7 @@ logger.start("Preparing data")
 		}
 		if (length(setdiff(markLvls, "DNAmeth")) > 0){
 			rec <- filterRepRefChip(rec, minReads=getConfigElement("plotRepTree.meth.minReads"))
+			rec <- filterRepRefAcc(rec, minReads=getConfigElement("plotRepTree.meth.minReads"))
 		}
 		numReps <- length(epiRepeatR:::getRepeatIds(getRepRef(rec)))
 		logger.info(c(numReps, "repeats retained after filtering"))
