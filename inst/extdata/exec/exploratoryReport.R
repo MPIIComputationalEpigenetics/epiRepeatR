@@ -21,6 +21,11 @@ library(muReportR) #reports
 # 	config = "/DEEP_fhgfs/projects/fmueller/repeatEpigenetics/epiRepeatR/analysis/deepBlood_fromGenome_v04mergedInput/config/config.json",
 # 	output = "/DEEP_fhgfs/projects/fmueller/repeatEpigenetics/epiRepeatR/analysis/deepBlood_fromGenome_v04mergedInput/results/exploratoryReport"
 # )
+# cmdArgs <- list(
+# 	input  = "/scratch/users/muellerf/scratch/epiRepeatR/RA_ATAC/RA_repeats_test_ua_v01/results/repeatEpigenomeCollection/repeatEpigenomeCollection.rds",
+# 	config = "/scratch/users/muellerf/scratch/epiRepeatR/RA_ATAC/RA_repeats_test_ua_v01/config/config.json",
+# 	output = "/scratch/users/muellerf/scratch/epiRepeatR/RA_ATAC/RA_repeats_test_ua_v01/results/exploratoryReport"
+# )
 
 ap <- ArgumentParser()
 ap$add_argument("-i", "--in", action="store", dest="input", help="Input file (RDS) containing a RepeatEpigenomeCollection object as R dataset.")
@@ -204,7 +209,7 @@ logger.start("Dimension reduction plots")
 	}
 
 	stext <- "The following plot shows dimension reduction for the epigenetic marks in repeats:"
-	report <- rnb.add.section(report, "Dimension Reduction", stext)
+	report <- addReportSection(report, "Dimension Reduction", stext)
 
 	logger.start("Plotting")
 		figPlots <- list()
@@ -225,7 +230,7 @@ logger.start("Dimension reduction plots")
 	defIndex <- grep(paste("dimRed", "pca", markLvls[1], "all", "all", sep="_"), sapply(figPlots, FUN=function(x){x@fname}))[1]
 	if (length(defIndex) < 1) defIndex <- 1
 	desc <- "Dimension reduction plots for epigenetic marks in repeats"
-	report	<- rnb.add.figure(report, desc, figPlots, settingNames, selected.image=defIndex)
+	report	<- addReportFigure(report, desc, figPlots, settingNames, selected.image=defIndex)
 logger.completed()
 
 logger.start("Sample Correlation Matrix")
@@ -253,7 +258,7 @@ logger.start("Sample Correlation Matrix")
 	}
 
 	stext <- "The following plot shows sample correlation coefficients for the epigenetic marks in repeats:"
-	report <- rnb.add.section(report, "Sample Correlation", stext)
+	report <- addReportSection(report, "Sample Correlation", stext)
 	settingNames <- list(
 		"Mark"=markLvls.named,
 		"Color by"=sampleGroupNames
@@ -262,7 +267,7 @@ logger.start("Sample Correlation Matrix")
 	defIndex <- grep(paste("corHm", markLvls[1], "all", sep="_"), sapply(figPlots, FUN=function(x){x@fname}))[1]
 	if (length(defIndex) < 1) defIndex <- 1
 	desc <- "Correlation heatmap for epigenetic marks in repeats. Pearson correlation is shown."
-	report	<- rnb.add.figure(report, desc, figPlots, settingNames, selected.image=defIndex)
+	report	<- addReportFigure(report, desc, figPlots, settingNames, selected.image=defIndex)
 logger.completed()
 
 if (length(replicateColumns) > 0){
@@ -304,7 +309,7 @@ if (length(replicateColumns) > 0){
 						cc <- cor(df2p[,1],df2p[,2],use="pairwise.complete.obs")
 						#if one or both of the samples is not present for the current mark
 						#cc will be NA and thus no scatterplot can be generated
-						pp <- rnb.message.plot("N/A")
+						pp <- ggMsgPlot("N/A")
 						if (!is.na(cc)){
 							pp <- create.densityScatter(df2p)
 						}
@@ -318,7 +323,7 @@ if (length(replicateColumns) > 0){
 		}
 
 		stext <- "The following plot shows the agreement between replicates according to annotation:"
-		report <- rnb.add.section(report, "Replicate Agreement", stext)
+		report <- addReportSection(report, "Replicate Agreement", stext)
 
 		logger.start("Plotting")
 			figPlots <- list()
@@ -350,7 +355,7 @@ if (length(replicateColumns) > 0){
 			"Comparison"=compVec
 		)
 		desc <- "Scatterplot of replicate comparisons"
-		report	<- rnb.add.figure(report, desc, figPlots, settingNames)
+		report	<- addReportFigure(report, desc, figPlots, settingNames)
 	logger.completed()
 }
 
