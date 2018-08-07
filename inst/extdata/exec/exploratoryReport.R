@@ -22,9 +22,9 @@ library(muReportR) #reports
 # 	output = "/DEEP_fhgfs/projects/fmueller/repeatEpigenetics/epiRepeatR/analysis/deepBlood_fromGenome_v04mergedInput/results/exploratoryReport"
 # )
 # cmdArgs <- list(
-# 	input  = "/scratch/users/muellerf/scratch/epiRepeatR/RA_ATAC/RA_repeats_test_ua_v01/results/repeatEpigenomeCollection/repeatEpigenomeCollection.rds",
-# 	config = "/scratch/users/muellerf/scratch/epiRepeatR/RA_ATAC/RA_repeats_test_ua_v01/config/config.json",
-# 	output = "/scratch/users/muellerf/scratch/epiRepeatR/RA_ATAC/RA_repeats_test_ua_v01/results/exploratoryReport"
+# 	input  = "/scratch/users/muellerf/scratch/epiRepeatR/RA_ATAC/RA_repeats_TeTr_ua_v01/results/repeatEpigenomeCollection/repeatEpigenomeCollection.rds",
+# 	config = "/scratch/users/muellerf/scratch/epiRepeatR/RA_ATAC/RA_repeats_TeTr_ua_v01/config/config.json",
+# 	output = "/scratch/users/muellerf/scratch/epiRepeatR/RA_ATAC/RA_repeats_TeTr_ua_v01/results/exploratoryReport"
 # )
 
 ap <- ArgumentParser()
