@@ -268,9 +268,9 @@ createRepPlot_groupSummaryTrees_meth <- function(
 
 		covgMat.sub <- covgMat[,unlist(ggs)]
 		covgMat.sub.rel <-  apply(covgMat.sub, 2, FUN=function(x){x/sum(x)}) # relative coverage
-		covg.score <- rowMeans(covgMat.sub.rel, na.rm=TRUE)
+		leafColScore <- rowMeans(covgMat.sub.rel, na.rm=TRUE)
 		#order the color values
-		leafColors <- colorize.value(covg.score, colscheme=colorpanel(100,"white","black"))
+		leafColors <- colorize.value(leafColScore, colscheme=colorpanel(100,"white","black"))
 		fn <- file.path(plotDir, paste0("repeatTree_groupSummary_",ggn,".pdf"))
 		# load_all(file.path(pkg.dir,"epiRepeatR"))
 		pdf(fn, width=20, height=100)
@@ -296,6 +296,7 @@ createRepPlot_groupSummaryTrees_meth <- function(
 #' @param .obj	            \code{\linkS4class{RepeatEpigenomeCollection}} object
 #' @param plotDir			Output directory where the plots are saved to
 #' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{\linkS4class{RepeatTree-class}} class for possible values.
+#' @param leafColorMethod   method for coloring the leafs of the dendrogram. Options are \code{"coverage"} for read coverage (default) and \code{"abundance"} for genomic abundance
 #' @param normChipMethod    method for normalizing ChIP enrichment scores per mark. See \code{\link{normalizeMatrix}} for possible values. 
 #' @param minReads			filtering parameter: specify the minimum number of reads that must match to a given repeat element in order for the repeat to be added to the plot
 #' @param minCpGs			filtering parameter: specify the minimum number of CpG that must be contained in a given repeat element in order for the repeat to be added to the plot
@@ -312,6 +313,7 @@ createRepPlot_markTree <- function(
 		.obj,
 		plotDir,
 		dendroMethod="repeatFamily",
+		leafColorMethod="coverage",
 		normChipMethod="none",
 		minReads=getConfigElement("plotRepTree.meth.minReads"),
 		minCpGs=getConfigElement("plotRepTree.meth.minCpGs"),
@@ -344,6 +346,7 @@ createRepPlot_markTree <- function(
 	}))
 	colnames(scoreMat) <- sampleNames.full
 	hasScore <- apply(scoreMat,2,FUN=function(x){!all(is.na(x))})
+
 	covgMat <- do.call("cbind", lapply(markLvls, FUN=function(mn){
 		cm <- getRepeatCovg(rec, mn)
 		if (mn == "DNAmeth" && all(is.na(cm))){
@@ -353,9 +356,18 @@ createRepPlot_markTree <- function(
 		return(cm)
 	}))
 	colnames(covgMat) <- sampleNames.full
-	covgMat.rel <- apply(covgMat, 2, FUN=function(x){x/sum(x)}) # relative coverage
-	covg.score <- rowMeans(covgMat.rel, na.rm=TRUE)
-	leafColors <- colorize.value(covg.score, colscheme=colorpanel(100,"white","black"))
+
+	leafColScore <- NULL
+	if (leafColorMethod=="abundance"){
+		repInfo <- getRepeatInfo(repRef)
+		leafColScore <- repInfo[,"percCovg"]
+	} else {
+		covgMat.rel <- apply(covgMat, 2, FUN=function(x){x/sum(x)}) # relative coverage
+		#TODO: add the option to color leaves by genomic abundance (if that annotation is in the REC .obj)
+		leafColScore <- rowMeans(covgMat.rel, na.rm=TRUE)
+	}
+	leafColors <- colorize.value(leafColScore, colscheme=colorpanel(100,"white","black"))
+	leafColors[is.na(leafColScore)] <- "#bd0026" #"red"
 
 	markGroups <- lapply(markLvls, FUN=function(mn){
 		sampleNames.full[hasScore & markNames.exp==mn]
@@ -403,11 +415,14 @@ createRepPlot_markTree <- function(
 			})
 			names(ggs.mark) <- markLvls
 
-			covgMat.sub <- covgMat[,unlist(ggs.sn)]
-			covgMat.sub.rel <-  apply(covgMat.sub, 2, FUN=function(x){x/sum(x)}) # relative coverage
-			covg.score <- rowMeans(covgMat.sub.rel, na.rm=TRUE)
-			#order the color values
-			leafColors <- colorize.value(covg.score, colscheme=colorpanel(100,"white","black"))
+			if (leafColorMethod!="abundance"){
+				covgMat.sub <- covgMat[,unlist(ggs.sn)]
+				covgMat.sub.rel <-  apply(covgMat.sub, 2, FUN=function(x){x/sum(x)}) # relative coverage
+				leafColScore <- rowMeans(covgMat.sub.rel, na.rm=TRUE)
+				#order the color values
+				leafColors <- colorize.value(leafColScore, colscheme=colorpanel(100,"white","black"))
+				leafColors[is.na(leafColScore)] <- "#bd0026" #"red"
+			}
 
 			fn <- file.path(plotDir, paste0("repeatTree_markSummary_",ggn,".pdf"))
 			pdf(fn, width=20, height=100)
