@@ -16,7 +16,7 @@ if (is.element("debug", names(epiRepeatR:::.config)) && epiRepeatR:::.config$deb
 rec <- readRDS(cmdArgs$input)
 
 epiRepeatR:::createRepPlot_markTree(
-	rec, cmdArgs$output,
+	rec, cmdArgs$output, leafColorMethod=getConfigElement("plotRepTree.leafColorMethod"),
 	dendroMethod=getConfigElement("plotRepTree.dendroMethod"), normChipMethod=getConfigElement("plotRepTree.normEnrich"),
 	minReads=getConfigElement("plotRepTree.meth.minReads"), minCpGs=getConfigElement("plotRepTree.meth.minCpGs"), minCpGcov=getConfigElement("meth.minCpGcov")
 )

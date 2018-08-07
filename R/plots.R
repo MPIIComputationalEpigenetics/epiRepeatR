@@ -313,7 +313,7 @@ createRepPlot_markTree <- function(
 		.obj,
 		plotDir,
 		dendroMethod="repeatFamily",
-		leafColorMethod="coverage",
+		leafColorMethod=getConfigElement("plotRepTree.leafColorMethod"),
 		normChipMethod="none",
 		minReads=getConfigElement("plotRepTree.meth.minReads"),
 		minCpGs=getConfigElement("plotRepTree.meth.minCpGs"),

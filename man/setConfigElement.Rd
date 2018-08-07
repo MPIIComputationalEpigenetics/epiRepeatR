@@ -74,6 +74,11 @@ Set a configuration item to a given value
                  grouping by hierarchical clustering based on occurrences of terms in the annotation fields of a repeat 
                  ("annotClust"; requires that the repeat references has been annotated from the EMBL format.)
   }
+  \item{\bold{\code{plotRepTree.leafColorMethod}}\code{ = "coverage"}}{
+        Method for coloring the leafs in the repeat subfamily dendrogram. Valid methods include:
+                 color by read coverage ("coverage"; default),
+					color by genomic abundance (percent of bases covered; "abundance")
+  }
   \item{\bold{\code{plotRepTree.normEnrich}}\code{ = "none"}}{
        Method for normalizing enrichment data before plotting. Currently supported are:
               \code{none} (no normalization),

@@ -18,6 +18,7 @@
 .config$tempDir <- tempdir()
 .config$inputBam.mappingStatus <- "all"
 .config$plotRepTree.dendroMethod <- "repeatFamily"
+.config$plotRepTree.leafColorMethod <- "coverage"
 .config$plotRepTree.normEnrich <- "none"
 .config$plotRepTree.meth.minCpGs  <- 2
 .config$plotRepTree.meth.minReads <- 100
@@ -90,6 +91,11 @@
 #'                  grouping by hierarchical clustering based on k-mer counts in the repeat sequence (Euclidean distance, complete linkage) ("hierClust"),
 #'                  grouping by hierarchical clustering based on occurrences of terms in the annotation fields of a repeat 
 #'                  ("annotClust"; requires that the repeat references has been annotated from the EMBL format.)
+#'   }
+#'   \item{\bold{\code{plotRepTree.leafColorMethod}}\code{ = "coverage"}}{
+#'         Method for coloring the leafs in the repeat subfamily dendrogram. Valid methods include:
+#'                  color by read coverage ("coverage"; default),
+#' 					color by genomic abundance (percent of bases covered; "abundance")
 #'   }
 #'   \item{\bold{\code{plotRepTree.normEnrich}}\code{ = "none"}}{
 #'        Method for normalizing enrichment data before plotting. Currently supported are:
