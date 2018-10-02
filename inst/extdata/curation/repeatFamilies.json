@@ -91,7 +91,11 @@
 				"piggyBac"
 			],
 			"RMER":[
-				"RMER[0-9][A-Z]"
+				"RMER[0-9][A-Z]?"
+			],
+			"UNKNOWN":[
+				"Repeat region",
+				"Internal sequence of mouse VL30 retro-element"
 			]
 		}
 	}
