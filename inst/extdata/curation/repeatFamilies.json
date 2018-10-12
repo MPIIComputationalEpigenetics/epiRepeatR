@@ -56,11 +56,18 @@
 		"familyRegExp": {
 			"SINE": [
 				"SINE1/7SL",
-				"SINE2/tRNA"
+				"SINE2/tRNA",
+				"SINE3/5S"
+			],
+			"LINE": [
+				"CR1",
+				"RTE",
+				"Vingi"
 			],
 			"ERV": [
 				"ERV[0-9]+",
-				"Endogenous Retrovirus"
+				"Endogenous Retrovirus",
+				"RMER[0-9][A-Z]?"
 			],
 			"Eutheria": [
 				"EUTREP[0-9]+",
@@ -89,9 +96,6 @@
 				"Kolobok",
 				"Merlin",
 				"piggyBac"
-			],
-			"RMER":[
-				"RMER[0-9][A-Z]?"
 			],
 			"UNKNOWN":[
 				"Repeat region",
