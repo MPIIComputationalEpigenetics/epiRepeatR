@@ -441,3 +441,41 @@ createRepPlot_markTree <- function(
 	)
 }
 
+################################################################################
+# Differential plots
+################################################################################
+
+#' @param repRef		repeat reference. Object of type \code{\linkS4class{RepeatReference}}.
+#' @param diffScoreList	list of differential score matrices. Obtained by the \code{\link{getRepeatScoresDiff,RepeatEpigenomeCollection-method}} function
+#' @param colorGradient	a vector of colors to be used for the heatmap (low values to high values). Alternatively, a list of vectors containing one element for each comparison/mark.
+#' @param zlim			vector of length 2 containing the limits to be applied to match the colors to values in the matrix. Alternatively, a list of vectors containing one element for each comparison/mark.
+#' @param groupColors	vector of colors to be used for the sample groups
+#' @param txt.cex		base text size to be used in the plot
+#' @param leafColors	colors of the leaf nodes/repeat elements in the same order as in \code{getRepeatIds(repRef)}. set to \code{NULL} (default) to disable custom leaf color
+#' @param dendroMethod  method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
+repPlot_differential <- function(
+		repRef,
+		compInfo,
+		diffScores,
+		colorGradient=colorpanel(100,"#EDF8B1","#41B6C4","#081D58"),
+		# zlim=c(min(scores, na.rm=TRUE), max(scores, na.rm=TRUE)),
+		leafColors=NULL,
+		addBoxplots=FALSE,
+		dendroMethod="repeatFamily"){
+
+	suppressPackageStartupMessages(require(ComplexHeatmap))
+
+	repTree <- RepeatTree(repRef, method=dendroMethod)
+
+	if (!is.list(compInfo))   compInfo <- list(compInfo)
+	if (!is.list(diffScores))  diffScores <- list(diffScores)
+
+	nComps <- length(compInfo)
+	# convert arguments that can differ for each group to group lists
+	if (!is.list(colorGradient))  colorGradient <- list(colorGradient)
+	if (length(colorGradient)==1) colorGradient <- rep(colorGradient, nComps)
+	if (length(colorGradient) != nComps) stop(paste0("Invalid argument: colorGradient. Must be of length 1 or N_comps"))
+
+}
+# compInfoList <- getComparisons(rec)[[1]]
+# diffScoreList <- getRepeatScoresDiff(rec, "accessibility", compInfoList)
