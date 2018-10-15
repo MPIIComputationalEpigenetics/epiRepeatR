@@ -4,7 +4,7 @@ Description: An R package for anlyzing the epigenetics of repetitive elements
 Authors@R: c(
     person("Fabian", "Mueller", email = "fmueller@mpi-inf.mpg.de",
     role = c("aut", "cre")))
-Date: 2018-07-24
+Date: 2018-10-15
 License: GPL-3
 Version: 0.9
 Depends:
@@ -36,7 +36,8 @@ Collate:
 	'preprocessing.R'
 	'alignment.R'
 	'methylationCalling.R'
+	'differential.R'
 	'plots.R'
 	'sandbox.R'
 	'main.R'
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
