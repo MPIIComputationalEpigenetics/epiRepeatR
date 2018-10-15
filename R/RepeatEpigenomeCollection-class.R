@@ -1,3 +1,6 @@
+#' @include RepeatReference-class.R
+NULL
+
 setClassUnion("ListOrNULL", c("list", "NULL"))
 
 #' RepeatEpigenomeCollection Class

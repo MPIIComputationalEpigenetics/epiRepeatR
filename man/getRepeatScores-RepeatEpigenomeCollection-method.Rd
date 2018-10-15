@@ -7,7 +7,8 @@
 \title{getRepeatScores-methods}
 \usage{
 \S4method{getRepeatScores}{RepeatEpigenomeCollection}(.Object, mark,
-  dropEmptySamples = FALSE, minCpGcov = getConfigElement("meth.minCpGcov"))
+  dropEmptySamples = FALSE,
+  minCpGcov = getConfigElement("meth.minCpGcov"))
 }
 \arguments{
 \item{.Object}{\code{\linkS4class{RepeatEpigenomeCollection}} object}

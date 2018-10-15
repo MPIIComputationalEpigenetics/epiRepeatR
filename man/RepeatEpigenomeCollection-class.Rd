@@ -14,8 +14,6 @@ RepeatEpigenomeCollection(quantFns, sampleNames, markNames, annot,
 }
 \description{
 A class for storing quantitative epigenetic data in repetitive elements of the genome
-
-RepeatEpigenomeCollection Constructor
 }
 \details{
 Multiple epigenetic marks are stored and each repetitive element (RE) in a given reference is assigned quantitative
