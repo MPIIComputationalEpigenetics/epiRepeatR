@@ -604,7 +604,7 @@ setMethod("getRepeatScoresDiff", signature(.Object="RepeatEpigenomeCollection"),
 			stop("Invalid compInfo paramater. Expected 'comparisonInfo' object")
 		}
 		markType <- inferMarkTypes(mark)
-		scoreFun <- function(x){NA}
+		repRefNames <- getRepeatIds(getRepRef(.Object))
 		if (markType == "DNAmeth"){
 			stop(paste0("Don't know how to compute differential methylation yet"))
 		} else if (is.element(markType, c("ChIPseq", "Acc"))){
@@ -621,6 +621,7 @@ setMethod("getRepeatScoresDiff", signature(.Object="RepeatEpigenomeCollection"),
 		} else {
 			stop(paste0("Unknown data type for mark:",mark))
 		}
+		rownames(diffScores) <- repRefNames
 		return(diffScores)
 	}
 )
