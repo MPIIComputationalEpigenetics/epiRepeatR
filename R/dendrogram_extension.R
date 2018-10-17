@@ -20,11 +20,12 @@ isLeaf <- function(dend){
 #' @param dendroList	list of dendrograms
 #' @param height		height (will be set as attribute) on which to merge the dendrograms
 #' @param midpoint		midpoint attribute that will be set in the resulting dendrogram
+#' @param label			label attribute that will be assigned to the resulting dendrogram
 #' @return a dendrogram object with the dendrograms from the input list as branches
 #'
 #' @author Fabian Mueller
 #' @noRd
-dendrogramMergeSimple <- function(dendroList, height=NA, midpoint=NULL){
+dendrogramMergeSimple <- function(dendroList, height=NA, midpoint=NULL, label=NULL){
 	res <- dendroList
 	subTreeMems <- sapply(dend,FUN=function(x){attr(x,"members")})
 	attr(res,"members") <- sum(subTreeMems)
@@ -34,6 +35,7 @@ dendrogramMergeSimple <- function(dendroList, height=NA, midpoint=NULL){
 	} else {
 		attr(res,"midpoint") <- midpoint
 	}
+	if (!is.null(label)) attr(res,"label") <- label
 	class(res) <- "dendrogram"
 	return(res)
 }
@@ -245,5 +247,41 @@ adjustAttr.midpoint <- function(tree){
 		attr(x, "midpoint") <- ifelse(nMems > 1, (nMems-1)/2, 0)
 		return(x)
 	})
+	return(res)
+}
+
+#' makeBinary
+#'
+#' convert a dendrogram to a binary tree, i.e. each node is either a leaf or has exactly two children
+#' (recursive function)
+#' 
+#' @param tree  the dendrogram to which the adjustment should be applied
+#' @param epsilon a small number that will be used for pseudosplitting nodes with more than two children at different heights
+#'
+#' @return the modified dendrogram
+#'
+#' @author Fabian Mueller
+#' @noRd
+makeBinary <- function(tree, eps=1e-6){
+	if (is.leaf(tree)) return(tree)
+	if (length(tree)==2){
+		return(dendrogramMergeSimple(list(makeBinary(tree[[1]], eps=eps), makeBinary(tree[[2]], eps=eps)), height=attr(tree,"height"), midpoint=attr(tree,"midpoint"), label=attr(tree,"label")))
+	}
+	if (length(tree)==1){
+		#only 1 member: traverse down until the tree is either a leaf or not linear any more
+		subTree <- dendrogramMergeSimple(tree[1],  height=attr(tree,"height"), midpoint=attr(tree,"midpoint"), label=NULL) #TODO: check if the height is still valid
+		res <- makeBinary(subTree, eps=eps)
+		return(res)
+	}
+	# more than 2 members
+	tree.left <- tree[[1]]
+	nMems.left <- attr(tree.left,"members")
+	attr(tree.left, "midpoint") <- ifelse(nMems.left > 1, (nMems.left-1)/2, 0)
+
+	tree.right <- makeBinary(dendrogramMergeSimple(tree[2:length(tree)], height=attr(tree,"height")-eps, label=attr(tree,"label")), eps=eps)
+	nMems.right <- attr(tree.right,"members")
+	attr(tree.right, "midpoint") <- ifelse(nMems.right > 1, (nMems.right-1)/2, 0)
+
+	res <- dendrogramMergeSimple(list(tree.left, tree.right), height=attr(tree,"height"), midpoint=attr(tree,"midpoint"), label=attr(tree,"label"))
 	return(res)
 }
