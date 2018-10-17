@@ -27,7 +27,7 @@ isLeaf <- function(dend){
 #' @noRd
 dendrogramMergeSimple <- function(dendroList, height=NA, midpoint=NULL, label=NULL){
 	res <- dendroList
-	subTreeMems <- sapply(dend,FUN=function(x){attr(x,"members")})
+	subTreeMems <- sapply(res,FUN=function(x){attr(x,"members")})
 	attr(res,"members") <- sum(subTreeMems)
 	attr(res,"height") <- height
 	if (is.null(midpoint)){
@@ -269,12 +269,14 @@ makeBinary <- function(tree, eps=1e-6){
 	}
 	if (length(tree)==1){
 		#only 1 member: traverse down until the tree is either a leaf or not linear any more
-		subTree <- dendrogramMergeSimple(tree[1],  height=attr(tree,"height"), midpoint=attr(tree,"midpoint"), label=NULL) #TODO: check if the height is still valid
+		subTree <- tree[[1]] #dendrogramMergeSimple(tree[1],  height=attr(tree,"height"), midpoint=attr(tree,"midpoint"), label=NULL)
+		attr(subTree, "height") <- attr(tree,"height") # Re-adjust the height
+		attr(subTree, "midpoint") <- attr(tree,"midpoint") # Re-adjust the midpoint
 		res <- makeBinary(subTree, eps=eps)
 		return(res)
 	}
 	# more than 2 members
-	tree.left <- tree[[1]]
+	tree.left <- makeBinary(tree[[1]])
 	nMems.left <- attr(tree.left,"members")
 	attr(tree.left, "midpoint") <- ifelse(nMems.left > 1, (nMems.left-1)/2, 0)
 
