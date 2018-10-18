@@ -567,14 +567,14 @@ repPlot_differential <- function(
 				Xs[, compInfo[[k]]$sampleIdx.grp1, drop=FALSE],
 				col = colR.scores,
 				show_row_names=FALSE, cluster_columns=FALSE,
-				name=paste0("score_hm_", compInfo[[k]]$cmpName, "_", compInfo[[k]]$name.grp1)
+				name=paste0("score_", compInfo[[k]]$cmpName, "_", compInfo[[k]]$name.grp1)
 			)
 
 			chm <- chm + Heatmap(
 				Xs[, compInfo[[k]]$sampleIdx.grp2, drop=FALSE],
 				col = colR.scores,
 				show_row_names=FALSE, cluster_columns=FALSE,
-				name=paste0("score_hm_", compInfo[[k]]$cmpName, "_", compInfo[[k]]$name.grp2)
+				name=paste0("score_", compInfo[[k]]$cmpName, "_", compInfo[[k]]$name.grp2)
 			)
 		}
 
@@ -589,7 +589,7 @@ repPlot_differential <- function(
 			X.groupScores,
 			col = colR.groupScores,
 			show_row_names=FALSE, cluster_columns=FALSE,
-			name=paste0("gScore_hm_", compInfo[[k]]$cmpName)
+			name=paste0("groupScore_", compInfo[[k]]$cmpName)
 		)
 
 		# chm <- chm + Heatmap(
