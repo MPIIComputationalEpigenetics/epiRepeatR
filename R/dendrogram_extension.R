@@ -76,6 +76,7 @@ getMemberAttr <- function(tree, attrName){
 #' @param tree		a dendrogram
 #' @param attrName	the name of the attribute to be set
 #' @param attrVals	a vector of values to be set for the leafs
+#' @param unsetInternalNodes	should the attribute for internal nodes be set to NULL
 #' @return a dendrogram in which the attributes for the leafs/members have been set to correspong values
 #'
 #' @author Fabian Mueller
@@ -89,7 +90,7 @@ getMemberAttr <- function(tree, attrName){
 #' res <- setMemberAttribute(dend, "someNum", sample(1:10,N,replace=TRUE))
 #' str(unclass(res))
 #' }
-setMemberAttr <- function(tree, attrName, attrVals){
+setMemberAttr <- function(tree, attrName, attrVals, unsetInternalNodes=FALSE){
 	Nmem <- attr(tree,"members")
 	if (length(attrVals)==1){
 		attrVals <- rep(attrVals,Nmem)
@@ -102,6 +103,8 @@ setMemberAttr <- function(tree, attrName, attrVals){
 		if (is.leaf(x)){
 			i <<- i + 1
 			attr(x, attrName) <- attrVals[i]
+		} else if (unsetInternalNodes){
+			attr(x, attrName) <- NULL
 		}
 		return(x)
 	})

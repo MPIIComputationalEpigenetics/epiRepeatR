@@ -605,10 +605,12 @@ setMethod("getRepeatScoresDiff", signature(.Object="RepeatEpigenomeCollection"),
 		}
 		markType <- inferMarkTypes(mark)
 		repRefNames <- getRepeatIds(getRepRef(.Object))
+		diffScores <- NULL
 		if (markType == "DNAmeth"){
 			stop(paste0("Don't know how to compute differential methylation yet"))
 		} else if (is.element(markType, c("ChIPseq", "Acc"))){
 			countMat <- getRepeatCovg(.Object, mark)
+			if (all(is.na(countMat))) return(NULL)
 			dm <- computeDiffMat.counts.deseq2(countMat, getAnnot(.Object), compInfo$designF, compInfo$annotCol, compInfo$name.grp1, compInfo$name.grp2)
 			diffScores <- data.frame(
 				diffScore=dm[,"log2FoldChange"],

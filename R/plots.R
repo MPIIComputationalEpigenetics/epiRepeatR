@@ -457,25 +457,291 @@ repPlot_differential <- function(
 		repRef,
 		compInfo,
 		diffScores,
-		colorGradient=colorpanel(100,"#EDF8B1","#41B6C4","#081D58"),
-		# zlim=c(min(scores, na.rm=TRUE), max(scores, na.rm=TRUE)),
+		sampleScores=list(),
+		colorGradient.groupScore=colorpanel(100,"#EDF8B1","#41B6C4","#081D58"),
+		zlim.groupScore=NULL,
+		colorGradient.diff=colorpanel(100,"#EDF8B1","#41B6C4","#081D58"),
+		zlim.diff=NULL,
+		colorGradient.score=colorpanel(100,"#EDF8B1","#41B6C4","#081D58"),
+		zlim.score=NULL,
 		leafColors=NULL,
-		addBoxplots=FALSE,
 		dendroMethod="repeatFamily"){
 
 	suppressPackageStartupMessages(require(ComplexHeatmap))
+	suppressPackageStartupMessages(require(circlize))
 
 	repTree <- RepeatTree(repRef, method=dendroMethod)
+	repDend <- makeBinary(getDendrogram(repTree))
+	# repDend <- setMemberAttr(repDend, "label", getMemberAttr(repDend, "label"), unsetInternalNodes=TRUE)
 
-	if (!is.list(compInfo))   compInfo <- list(compInfo)
-	if (!is.list(diffScores))  diffScores <- list(diffScores)
+	if (class(compInfo) == "comparisonInfo")   compInfo <- list(compInfo)
+	if (is.data.frame(diffScores) || !is.list(diffScores))  diffScores <- list(diffScores)
 
 	nComps <- length(compInfo)
-	# convert arguments that can differ for each group to group lists
-	if (!is.list(colorGradient))  colorGradient <- list(colorGradient)
-	if (length(colorGradient)==1) colorGradient <- rep(colorGradient, nComps)
-	if (length(colorGradient) != nComps) stop(paste0("Invalid argument: colorGradient. Must be of length 1 or N_comps"))
+	if (length(diffScores) != nComps) stop(paste0("Invalid argument: diffScores. Must be of length N_comps"))
 
+	if (!is.list(sampleScores))  sampleScores <- list(sampleScores)
+	if (length(sampleScores)==1) sampleScores <- rep(sampleScores, nComps)
+	if (!is.element(length(sampleScores), c(0, nComps))) stop(paste0("Invalid argument: sampleScores. Must be of length 0, 1 or N_comps"))
+	includeSampleScores <- length(sampleScores) > 0
+
+	# convert arguments that can differ for each group to group lists
+	if (!is.list(colorGradient.groupScore))  colorGradient.groupScore <- list(colorGradient.groupScore)
+	if (length(colorGradient.groupScore)==1) colorGradient.groupScore <- rep(colorGradient.groupScore, nComps)
+	if (length(colorGradient.groupScore) != nComps) stop(paste0("Invalid argument: colorGradient.groupScore. Must be of length 1 or N_comps"))
+
+	if (!is.list(zlim.groupScore))  zlim.groupScore <- list(zlim.groupScore)
+	if (length(zlim.groupScore)==1) zlim.groupScore <- rep(zlim.groupScore, nComps)
+	if (length(zlim.groupScore) != nComps) stop(paste0("Invalid argument: zlim.groupScore. Must be of length 1 or N_comps"))
+
+	if (!is.list(colorGradient.diff))  colorGradient.diff <- list(colorGradient.diff)
+	if (length(colorGradient.diff)==1) colorGradient.diff <- rep(colorGradient.diff, nComps)
+	if (length(colorGradient.diff) != nComps) stop(paste0("Invalid argument: colorGradient.diff. Must be of length 1 or N_comps"))
+
+	if (!is.list(zlim.diff))  zlim.diff <- list(zlim.diff)
+	if (length(zlim.diff)==1) zlim.diff <- rep(zlim.diff, nComps)
+	if (length(zlim.diff) != nComps) stop(paste0("Invalid argument: zlim.diff. Must be of length 1 or N_comps"))
+
+	if (!is.list(colorGradient.score))  colorGradient.score <- list(colorGradient.score)
+	if (length(colorGradient.score)==1) colorGradient.score <- rep(colorGradient.score, nComps)
+	if (length(colorGradient.score) != nComps) stop(paste0("Invalid argument: colorGradient.score. Must be of length 1 or N_comps"))
+
+	if (!is.list(zlim.score))  zlim.score <- list(zlim.score)
+	if (length(zlim.score)==1) zlim.score <- rep(zlim.score, nComps)
+	if (length(zlim.score) != nComps) stop(paste0("Invalid argument: zlim.score. Must be of length 1 or N_comps"))
+
+
+
+	repIds <- getRepeatIds(repRef)
+	repIds.unnamed <- repIds
+	names(repIds) <- repIds #for the ComplexHeatmap row names
+	nReps <- length(repIds)
+	if (is.null(leafColors)) leafColors <- rainbow(nReps) # rep("grey", nReps)
+	leafColors <- as.matrix(leafColors)
+	rownames(leafColors) <- repIds
+
+
+
+	treeHm <- Heatmap(leafColors[,1,drop=FALSE], rect_gp=gpar(type = "none"),
+		cell_fun = function(j, i, x, y, w, h, fill) {
+			grid.circle(x=x, y=y, r=h*40, gp=gpar(col=NA, fill = leafColors[i,1]))
+		},
+		cluster_rows=repDend, cluster_columns=FALSE,
+		show_row_names=FALSE, show_column_names=FALSE, show_heatmap_legend=FALSE,
+		name="tree"
+		# width=unit(0.1, "npc")
+	) + rowAnnotation(labels= anno_text(repIds, which = "row", just=c("left", "center")), width=unit(0.2, "npc")) #interestingly, for custom dendrograms, repIds must be named
+	chm <- treeHm
+
+	for (i in 1:nComps){	
+		X.groupScores <- as.matrix(diffScores[[i]][, c("score.g1", "score.g2")])
+		colnames(X.groupScores) <- c(compInfo[[i]]$name.grp1, compInfo[[i]]$name.grp2)
+		rownames(X.groupScores) <- repIds.unnamed
+
+		zlimV <- zlim.groupScore[[i]]
+		if (is.null(zlim[[i]]))	zlimV <- c(min(X.groupScores, na.rm=TRUE),max(X.groupScores,na.rm=TRUE))
+		colR.groupScores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.groupScore[[i]])), colorGradient.groupScore[[i]])
+
+		X.diff <- as.matrix(diffScores[[i]][, c("diffScore")])
+		colnames(X.diff) <- paste0("diff_", compInfo[[i]]$cmpName)
+		rownames(X.diff) <- repIds.unnamed
+
+		zlimV <- zlim.diff[[i]]
+		if (is.null(zlim[[i]]))	zlimV <- c(min(X.diff, na.rm=TRUE),max(X.diff,na.rm=TRUE))
+		colR.diff <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.diff[[i]])), colorGradient.diff[[i]])
+
+		colR.scores <- NULL
+		Xs <- NULL
+		if (includeSampleScores){
+			Xs <- sampleScores[[i]][repIds.unnamed, ]
+			zlimV <- zlim.score[[i]]
+			if (is.null(zlim[[i]]))	zlimV <- c(min(Xs,na.rm=TRUE),max(Xs,na.rm=TRUE))
+			colR.scores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.score[[i]])), colorGradient.score[[i]])
+		}
+
+		if (includeSampleScores){
+			chm <- chm + Heatmap(
+				Xs[, compInfo[[i]]$sampleIdx.grp1, drop=FALSE],
+				col = colR.scores,
+				show_row_names=FALSE, cluster_columns=FALSE,
+				name=paste0("score_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp1)
+			)
+		}
+
+		chm <- chm + Heatmap(
+			X.groupScores[,1,drop=FALSE],
+			col = colR.groupScores,
+			show_row_names=FALSE,
+			name=paste0("gScore_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp1)
+		)
+
+		if (includeSampleScores){
+			chm <- chm + Heatmap(
+				Xs[, compInfo[[i]]$sampleIdx.grp2, drop=FALSE],
+				col = colR.scores,
+				show_row_names=FALSE, cluster_columns=FALSE,
+				name=paste0("score_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp2)
+			)
+		}
+
+		chm <- chm + Heatmap(
+			X.groupScores[,2,drop=FALSE],
+			col = colR.groupScores,
+			show_row_names=FALSE,
+			name=paste0("gScore_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp2)
+		)
+
+		chm <- chm + Heatmap(
+			X.diff,
+			col = colR.diff,
+			show_row_names=FALSE,
+			name=paste0("diff_hm_", compInfo[[i]]$cmpName)
+		)
+		
+
+		if (includeSampleScores){
+			chm <- chm + rowAnnotation(
+				g1 = row_anno_boxplot(Xs[, compInfo[[i]]$sampleIdx.grp1, drop=FALSE], axis=TRUE, gp=gpar(col="#1b7837")),
+   				g2 = row_anno_boxplot(Xs[, compInfo[[i]]$sampleIdx.grp2, drop=FALSE], axis=TRUE, gp=gpar(col="#762a83")),
+   				width=unit(0.2, "npc")
+   			)
+		}
+	}
+
+	# pdftemp(width=20, height=150)
+	# 	draw(chm)
+	# dev.off()
+	return(chm)
 }
-# compInfoList <- getComparisons(rec)[[1]]
-# diffScoreList <- getRepeatScoresDiff(rec, "accessibility", compInfoList)
+
+
+#' createRepPlot_markTree
+#'
+#' Plots a repeat sequence summary tree for all marks in the dataset
+#'
+#' @param .obj	            \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param plotDir			Output directory where the plots are saved to
+#' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{\linkS4class{RepeatTree-class}} class for possible values.
+#' @param leafColorMethod   method for coloring the leafs of the dendrogram. Options are \code{"coverage"} for read coverage (default) and \code{"abundance"} for genomic abundance
+#' @param normChipMethod    method for normalizing ChIP enrichment scores per mark. See \code{\link{normalizeMatrix}} for possible values. 
+#' @param minReads			filtering parameter: specify the minimum number of reads that must match to a given repeat element in order for the repeat to be added to the plot
+#' @param minCpGs			filtering parameter: specify the minimum number of CpG that must be contained in a given repeat element in order for the repeat to be added to the plot
+#' @param minCpGcov			filtering parameter: specify the minimum number of reads that must cover a given CpG in order to be considered a valid methylation measurement
+#' @return nothing of particular interest
+#'
+#' @details
+#' The reference repeats are obtained via \code{RepeatReference()}. Which repeats are used is regulated by the filtering parameters
+#' One PDF file for each comparison information is created in the output directory
+#'
+#' @author Fabian Mueller
+#' @noRd
+createRepPlot_differential <- function(
+		.obj,
+		compInfo,
+		plotDir,
+		dendroMethod="repeatFamily",
+		leafColorMethod=getConfigElement("plotRepTree.leafColorMethod"),
+		normChipMethod="none",
+		minReads=getConfigElement("plotRepTree.meth.minReads"),
+		minCpGs=getConfigElement("plotRepTree.meth.minCpGs"),
+		minCpGcov=getConfigElement("meth.minCpGcov")){
+
+	rec <- filterRepRefMeth(.obj, minReads=minReads, minCpGs=minCpGs, minCpGcov=minCpGcov)
+	rec <- filterRepRefChip(rec, minReads=minReads)
+	rec <- filterRepRefAcc(rec, minReads=minReads)
+	repRef <- getRepRef(rec)
+	if (length(getRepeatIds(repRef)) < 1) logger.error("No repeat sequence retained after filtering")
+
+	markLvls <- getMarks(rec)
+
+	diffMatL <- lapply(markLvls, FUN=function(mn){getRepeatScoresDiff(.obj, mn, compInfo)})
+	names(diffMatL) <- markLvls
+	markIsValid <- sapply(diffMatL, FUN=function(x){!is.null(x)})
+	if (sum(markIsValid) < 1) logger.error("No differential matrix could be computed for any mark")
+	markLvls <- markLvls[markIsValid]
+	diffMatL <- diffMatL[markIsValid]
+
+	scoreMatL <- lapply(markLvls, FUN=function(mn){
+		rr <- getRepeatScores(rec, mn, minCpGcov=minCpGcov)
+		mt <- inferMarkTypes(mn)
+		if (is.element(mt, c("ChIPseq", "Acc"))){
+			rr <- normalizeMatrix(rr, method=normChipMethod)
+		}
+		return(rr)
+	})
+	names(scoreMatL) <- markLvls
+
+	covgMatL <- lapply(markLvls, FUN=function(mn){
+		cm <- getRepeatCovg(rec, mn)
+		if (mn == "DNAmeth" && all(is.na(cm))){
+			logger.info("No read coverage found. --> using the number of repeat instances as a proxy.")
+			cm <- getRepeatCovg(rec, mn, type="numInstances")
+		}
+		return(cm)
+	})
+	colnames(covgMatL) <- markLvls
+
+	leafColScore <- NULL
+	if (leafColorMethod=="abundance"){
+		repInfo <- getRepeatInfo(repRef)
+		leafColScore <- repInfo[,"percCovg"]
+	} else {
+		# relative coverage
+		covgMat.rel <- do.call("cbind", lapply(covgMatL, FUN=function(mm){
+			rowMeans(apply(mm, 2, FUN=function(x){x/sum(x)}), na.rm=TRUE)
+		})) 
+		leafColScore <- rowMeans(covgMat.rel, na.rm=TRUE)
+	}
+	leafColors <- colorize.value(leafColScore, colscheme=colorpanel(100,"white","black"))
+	leafColors[is.na(leafColScore)] <- "#bd0026" #"red"
+
+	colGrads.score <- rep(list(colorpanel(100,"#8C510A","#F5F5F5","#01665E")), length(markLvls))
+	colGrads.groupScore <- rep(list(colorpanel(100,"#EDF8B1","#41B6C4","#081D58")), length(markLvls))
+	colGrads.diff <- rep(list(colorpanel(100,"#b2182b","#F7F7F7","#2166ac")), length(markLvls))
+
+	zlims.score <- rep(list(c(-3, 3)), length(markLvls)) #chip-seq abs(log2FC) limit to range [-3,3]
+	zlims.groupScore <- rep(list(NULL), length(markLvls))
+	zlims.diff <- rep(list(NULL), length(markLvls))
+
+	indMeth <- match("DNAmeth", markLvls)
+	if (!is.na(indMeth)){
+		colGrads.score[[indMeth]] <- colorpanel(100,"#EDF8B1","#41B6C4","#081D58")
+		zlims.score[[indMeth]] <- c(0,1)
+	}
+	indAcc <- match("Acc", inferMarkTypes(markLvls))
+	if (!is.na(indAcc) && length(indAcc)){
+		for (i in indAcc){
+			zlims.score[[i]] <- c(-5,5)
+		}
+	}
+
+	chm <- repPlot_differential(
+		repRef,
+		compInfo,
+		diffMatL,
+		sampleScores=scoreMatL,
+		colorGradient.groupScore=colGrads.groupScore,
+		zlim.groupScore=zlims.groupScore,
+		colorGradient.diff=colGrads.diff,
+		zlim.diff=zlims.diff,
+		colorGradient.score=colGrads.score,
+		zlim.score=zlims.score,
+		leafColors=leafColors,
+		dendroMethod=dendroMethod
+	)
+
+	fn <- file.path(plotDir, paste0("repeatTree_differential_", compInfo$cmpName, ".pdf"))
+	pdf(fn, width=20, height=150)
+		draw(chm)
+	dev.off()
+
+	res <- list(
+		status="success",
+		callParams=list(
+			plotDir=plotDir,
+			minReads=minReads,
+			minCpGs=minCpGs,
+			minCpGcov=minCpGcov
+		)
+	)
+}
