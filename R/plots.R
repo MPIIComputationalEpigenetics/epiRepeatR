@@ -601,12 +601,14 @@ repPlot_differential <- function(
 
 		pValVec <- diffScores[[k]]$diffPval.adj
 		pValVec[is.na(pValVec)] <- 1
+		print(pValVec[i])
 
 		chm <- chm + Heatmap(
 			X.diff,
 			col=colR.diff,
 			cell_fun = function(j, i, x, y, w, h, fill) {
 				fillCol <- NA
+				print(i); print(pValVec[i])
 			    if (pValVec[i] < 0.05) {
 					fillCol <- "black"
 					grid.text("*", x, y, gp = gpar(fontsize=10))
