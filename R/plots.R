@@ -661,7 +661,7 @@ createRepPlot_differential <- function(
 
 	markLvls <- getMarks(rec)
 
-	diffMatL <- lapply(markLvls, FUN=function(mn){getRepeatScoresDiff(.obj, mn, compInfo)})
+	diffMatL <- lapply(markLvls, FUN=function(mn){getRepeatScoresDiff(rec, mn, compInfo)})
 	names(diffMatL) <- markLvls
 	markIsValid <- sapply(diffMatL, FUN=function(x){!is.null(x)})
 	if (sum(markIsValid) < 1) logger.error("No differential matrix could be computed for any mark")
