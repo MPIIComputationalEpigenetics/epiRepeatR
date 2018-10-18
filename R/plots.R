@@ -601,7 +601,7 @@ repPlot_differential <- function(
 
 		pValVec <- diffScores[[k]]$diffPval.adj
 		pValVec[is.na(pValVec)] <- 1
-		print(pValVec[i])
+		print(pValVec)
 
 		chm <- chm + Heatmap(
 			X.diff,
