@@ -605,7 +605,7 @@ repPlot_differential <- function(
 			col=colR.diff,
 			cell_fun = function(j, i, x, y, w, h, fill) {
 				fillCol <- NA
-			    if (diffScores[[k]]$padj[i] < 0.05) {
+			    if (diffScores[[k]]$diffPval.adj[i] < 0.05) {
 					fillCol <- "black"
 					grid.text("*", x, y, gp = gpar(fontsize=10))
 					grid.rect(x, y, w, h, gp = gpar(fill=NA, col=fillCol))
