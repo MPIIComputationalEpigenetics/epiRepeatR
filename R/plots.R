@@ -679,7 +679,7 @@ createRepPlot_differential <- function(
 		}
 		return(cm)
 	})
-	colnames(covgMatL) <- markLvls
+	names(covgMatL) <- markLvls
 
 	leafColScore <- NULL
 	if (leafColorMethod=="abundance"){
