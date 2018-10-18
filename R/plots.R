@@ -532,49 +532,50 @@ repPlot_differential <- function(
 	) + rowAnnotation(labels= anno_text(repIds, which = "row", just=c("left", "center")), width=unit(0.2, "npc")) #interestingly, for custom dendrograms, repIds must be named
 	chm <- treeHm
 
-	for (i in 1:nComps){
+	for (k in 1:nComps){
 		# if (getConfigElement("debug")) print(paste0("[DEBUG:]  adding data for comparison", i))
-		X.groupScores <- as.matrix(diffScores[[i]][, c("score.g1", "score.g2")])
-		colnames(X.groupScores) <- c(compInfo[[i]]$name.grp1, compInfo[[i]]$name.grp2)
+		print(str(diffScores[[k]]))
+		X.groupScores <- as.matrix(diffScores[[k]][, c("score.g1", "score.g2")])
+		colnames(X.groupScores) <- c(compInfo[[k]]$name.grp1, compInfo[[k]]$name.grp2)
 		rownames(X.groupScores) <- repIds.unnamed
 
-		zlimV <- zlim.groupScore[[i]]
-		if (is.null(zlimV[[i]]))	zlimV <- c(min(X.groupScores, na.rm=TRUE),max(X.groupScores,na.rm=TRUE))
-		colR.groupScores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.groupScore[[i]])), colorGradient.groupScore[[i]])
+		zlimV <- zlim.groupScore[[k]]
+		if (is.null(zlimV[[k]]))	zlimV <- c(min(X.groupScores, na.rm=TRUE),max(X.groupScores,na.rm=TRUE))
+		colR.groupScores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.groupScore[[k]])), colorGradient.groupScore[[k]])
 
 		# if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK1"))
-		X.diff <- as.matrix(diffScores[[i]][, c("diffScore")])
-		colnames(X.diff) <- paste0("diff_", compInfo[[i]]$cmpName)
+		X.diff <- as.matrix(diffScores[[k]][, c("diffScore")])
+		colnames(X.diff) <- paste0("diff_", compInfo[[k]]$cmpName)
 		rownames(X.diff) <- repIds.unnamed
 
 		# if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK2"))
 
-		zlimV <- zlim.diff[[i]]
-		if (is.null(zlimV[[i]]))	zlimV <- c(min(X.diff, na.rm=TRUE),max(X.diff,na.rm=TRUE))
-		colR.diff <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.diff[[i]])), colorGradient.diff[[i]])
+		zlimV <- zlim.diff[[k]]
+		if (is.null(zlimV[[k]]))	zlimV <- c(min(X.diff, na.rm=TRUE),max(X.diff,na.rm=TRUE))
+		colR.diff <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.diff[[k]])), colorGradient.diff[[k]])
 
 		colR.scores <- NULL
 		Xs <- NULL
 		if (includeSampleScores){
-			Xs <- sampleScores[[i]][repIds.unnamed, ]
-			zlimV <- zlim.score[[i]]
-			if (is.null(zlimV[[i]]))	zlimV <- c(min(Xs,na.rm=TRUE),max(Xs,na.rm=TRUE))
-			colR.scores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.score[[i]])), colorGradient.score[[i]])
+			Xs <- sampleScores[[k]][repIds.unnamed, ]
+			zlimV <- zlim.score[[k]]
+			if (is.null(zlimV[[k]]))	zlimV <- c(min(Xs,na.rm=TRUE),max(Xs,na.rm=TRUE))
+			colR.scores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.score[[k]])), colorGradient.score[[k]])
 		}
 
 		if (includeSampleScores){
 			chm <- chm + Heatmap(
-				Xs[, compInfo[[i]]$sampleIdx.grp1, drop=FALSE],
+				Xs[, compInfo[[k]]$sampleIdx.grp1, drop=FALSE],
 				col = colR.scores,
 				show_row_names=FALSE, cluster_columns=FALSE,
-				name=paste0("score_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp1)
+				name=paste0("score_hm_", compInfo[[k]]$cmpName, "_", compInfo[[k]]$name.grp1)
 			)
 
 			chm <- chm + Heatmap(
-				Xs[, compInfo[[i]]$sampleIdx.grp2, drop=FALSE],
+				Xs[, compInfo[[k]]$sampleIdx.grp2, drop=FALSE],
 				col = colR.scores,
 				show_row_names=FALSE, cluster_columns=FALSE,
-				name=paste0("score_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp2)
+				name=paste0("score_hm_", compInfo[[k]]$cmpName, "_", compInfo[[k]]$name.grp2)
 			)
 		}
 
@@ -582,28 +583,43 @@ repPlot_differential <- function(
 		# 	X.groupScores[,1,drop=FALSE],
 		# 	col = colR.groupScores,
 		# 	show_row_names=FALSE,
-		# 	name=paste0("gScore_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp1)
+		# 	name=paste0("gScore_hm_", compInfo[[k]]$cmpName, "_", compInfo[[k]]$name.grp1)
 		# )
 
 		chm <- chm + Heatmap(
 			X.groupScores,
 			col = colR.groupScores,
-			show_row_names=FALSE,
-			name=paste0("gScore_hm_", compInfo[[i]]$cmpName)
+			show_row_names=FALSE, cluster_columns=FALSE,
+			name=paste0("gScore_hm_", compInfo[[k]]$cmpName)
 		)
+
+		# chm <- chm + Heatmap(
+		# 	X.diff,
+		# 	col = colR.diff,
+		# 	show_row_names=FALSE,
+		# 	name=paste0("diff_hm_", compInfo[[k]]$cmpName)
+		# )
 
 		chm <- chm + Heatmap(
 			X.diff,
-			col = colR.diff,
-			show_row_names=FALSE,
-			name=paste0("diff_hm_", compInfo[[i]]$cmpName)
+			col=colR.diff,
+			cell_fun = function(j, i, x, y, w, h, fill) {
+				fillCol <- NA
+			    if (diffScores[[k]]$padj[i] < 0.05) {
+					fillCol <- "black"
+					grid.text("*", x, y, gp = gpar(fontsize=10))
+					grid.rect(x, y, w, h, gp = gpar(fill=NA, col=fillCol))
+				}
+			},
+			show_row_names=FALSE, cluster_columns=FALSE,
+			name=paste0("diff_hm_", compInfo[[k]]$cmpName)
 		)
-		
+			
 
 		if (includeSampleScores){
 			chm <- chm + rowAnnotation(
-				g1 = row_anno_boxplot(Xs[, compInfo[[i]]$sampleIdx.grp1, drop=FALSE], axis=TRUE, gp=gpar(col="#1b7837")),
-   				g2 = row_anno_boxplot(Xs[, compInfo[[i]]$sampleIdx.grp2, drop=FALSE], axis=TRUE, gp=gpar(col="#762a83")),
+				g1 = row_anno_boxplot(Xs[, compInfo[[k]]$sampleIdx.grp1, drop=FALSE], axis=TRUE, gp=gpar(col="#1b7837")),
+   				g2 = row_anno_boxplot(Xs[, compInfo[[k]]$sampleIdx.grp2, drop=FALSE], axis=TRUE, gp=gpar(col="#762a83")),
    				width=unit(0.2, "npc")
    			)
 		}
