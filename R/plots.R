@@ -534,7 +534,6 @@ repPlot_differential <- function(
 
 	for (k in 1:nComps){
 		# if (getConfigElement("debug")) print(paste0("[DEBUG:]  adding data for comparison", i))
-		print(str(diffScores[[k]]))
 		X.groupScores <- as.matrix(diffScores[[k]][, c("score.g1", "score.g2")])
 		colnames(X.groupScores) <- c(compInfo[[k]]$name.grp1, compInfo[[k]]$name.grp2)
 		rownames(X.groupScores) <- repIds.unnamed
@@ -602,14 +601,13 @@ repPlot_differential <- function(
 
 		pValVec <- diffScores[[k]]$diffPval.adj
 		pValVec[is.na(pValVec)] <- 1
-		print(str(pValVec))
 
 		chm <- chm + Heatmap(
 			X.diff,
 			col=colR.diff,
 			cell_fun = function(j, i, x, y, w, h, fill) {
 				fillCol <- NA
-			    if (pValVec < 0.05) {
+			    if (pValVec[i] < 0.05) {
 					fillCol <- "black"
 					grid.text("*", x, y, gp = gpar(fontsize=10))
 					grid.rect(x, y, w, h, gp = gpar(fill=NA, col=fillCol))
