@@ -536,16 +536,22 @@ repPlot_differential <- function(
 	for (i in 1:nComps){
 		if (getConfigElement("debug")) print(paste0("[DEBUG:]  adding data for comparison", i))
 		X.groupScores <- as.matrix(diffScores[[i]][, c("score.g1", "score.g2")])
+		if (getConfigElement("debug")) print(paste0("[DEBUG:]    STR")); print(str(X.groupScores))
 		colnames(X.groupScores) <- c(compInfo[[i]]$name.grp1, compInfo[[i]]$name.grp2)
 		rownames(X.groupScores) <- repIds.unnamed
+		if (getConfigElement("debug")) print(paste0("[DEBUG:]    STR2")); print(str(X.groupScores))
+
 
 		zlimV <- zlim.groupScore[[i]]
 		if (is.null(zlim[[i]]))	zlimV <- c(min(X.groupScores, na.rm=TRUE),max(X.groupScores,na.rm=TRUE))
 		colR.groupScores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.groupScore[[i]])), colorGradient.groupScore[[i]])
 
+		if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK1"))
 		X.diff <- as.matrix(diffScores[[i]][, c("diffScore")])
 		colnames(X.diff) <- paste0("diff_", compInfo[[i]]$cmpName)
 		rownames(X.diff) <- repIds.unnamed
+
+		if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK2"))
 
 		zlimV <- zlim.diff[[i]]
 		if (is.null(zlim[[i]]))	zlimV <- c(min(X.diff, na.rm=TRUE),max(X.diff,na.rm=TRUE))
