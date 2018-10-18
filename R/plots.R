@@ -446,11 +446,15 @@ createRepPlot_markTree <- function(
 ################################################################################
 
 #' @param repRef		repeat reference. Object of type \code{\linkS4class{RepeatReference}}.
-#' @param diffScoreList	list of differential score matrices. Obtained by the \code{\link{getRepeatScoresDiff,RepeatEpigenomeCollection-method}} function
-#' @param colorGradient	a vector of colors to be used for the heatmap (low values to high values). Alternatively, a list of vectors containing one element for each comparison/mark.
-#' @param zlim			vector of length 2 containing the limits to be applied to match the colors to values in the matrix. Alternatively, a list of vectors containing one element for each comparison/mark.
-#' @param groupColors	vector of colors to be used for the sample groups
-#' @param txt.cex		base text size to be used in the plot
+#' @param compInfo      list of comparison info as returned by \code{\link{getComparisonInfo,RepeatEpigenomeCollection-method}}
+#' @param diffScores	list of differential score matrices. Obtained by the \code{\link{getRepeatScoresDiff,RepeatEpigenomeCollection-method}} function
+#' @param sampleScores	list of sample score matrices. Can for instance be obtained by the \code{\link{getRepeatScores,RepeatEpigenomeCollection-method}} function
+#' @param colorGradient.groupScore	a vector of colors to be used for the group score heatmap (low values to high values). Alternatively, a list of vectors containing one element for each comparison/mark.
+#' @param zlim.groupScore			vector of length 2 containing the limits to be applied to match the colors to values in the group score matrix. Alternatively, a list of vectors containing one element for each comparison/mark.
+#' @param colorGradient.diff	a vector of colors to be used for the differential score heatmap (low values to high values). Alternatively, a list of vectors containing one element for each comparison/mark.
+#' @param zlim.diff			vector of length 2 containing the limits to be applied to match the colors to values in the differential score matrix. Alternatively, a list of vectors containing one element for each comparison/mark.
+#' @param colorGradient.score	a vector of colors to be used for the sample repeat score heatmap (low values to high values). Alternatively, a list of vectors containing one element for each comparison/mark.
+#' @param zlim.score			vector of length 2 containing the limits to be applied to match the colors to values in the sample repeat score matrix. Alternatively, a list of vectors containing one element for each comparison/mark.
 #' @param leafColors	colors of the leaf nodes/repeat elements in the same order as in \code{getRepeatIds(repRef)}. set to \code{NULL} (default) to disable custom leaf color
 #' @param dendroMethod  method for plotting the repeat subfamily dendrogram. See \code{RepeatTree} class for possible values.
 repPlot_differential <- function(
@@ -638,11 +642,12 @@ repPlot_differential <- function(
 }
 
 
-#' createRepPlot_markTree
+#' createRepPlot_differential
 #'
-#' Plots a repeat sequence summary tree for all marks in the dataset
+#' Plots a repeat differential summary tree across all marks for a given comparison in the dataset
 #'
 #' @param .obj	            \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param compInfo          comparison info as returned by \code{\link{getComparisonInfo,RepeatEpigenomeCollection-method}}
 #' @param plotDir			Output directory where the plots are saved to
 #' @param dendroMethod      method for plotting the repeat subfamily dendrogram. See \code{\linkS4class{RepeatTree-class}} class for possible values.
 #' @param leafColorMethod   method for coloring the leafs of the dendrogram. Options are \code{"coverage"} for read coverage (default) and \code{"abundance"} for genomic abundance
@@ -654,7 +659,7 @@ repPlot_differential <- function(
 #'
 #' @details
 #' The reference repeats are obtained via \code{RepeatReference()}. Which repeats are used is regulated by the filtering parameters
-#' One PDF file for each comparison information is created in the output directory
+#' One PDF file is created in the output directory
 #'
 #' @author Fabian Mueller
 #' @noRd
