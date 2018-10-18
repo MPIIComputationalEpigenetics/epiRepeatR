@@ -520,7 +520,7 @@ repPlot_differential <- function(
 	leafColors <- as.matrix(leafColors)
 	rownames(leafColors) <- repIds
 
-
+	if (getConfigElement("debug")) print(paste0("[DEBUG:]  Constructing repeat tree "))
 
 	treeHm <- Heatmap(leafColors[,1,drop=FALSE], rect_gp=gpar(type = "none"),
 		cell_fun = function(j, i, x, y, w, h, fill) {
@@ -533,7 +533,8 @@ repPlot_differential <- function(
 	) + rowAnnotation(labels= anno_text(repIds, which = "row", just=c("left", "center")), width=unit(0.2, "npc")) #interestingly, for custom dendrograms, repIds must be named
 	chm <- treeHm
 
-	for (i in 1:nComps){	
+	for (i in 1:nComps){
+		if (getConfigElement("debug")) print(paste0("[DEBUG:]  adding data for comparison", i))
 		X.groupScores <- as.matrix(diffScores[[i]][, c("score.g1", "score.g2")])
 		colnames(X.groupScores) <- c(compInfo[[i]]$name.grp1, compInfo[[i]]$name.grp2)
 		rownames(X.groupScores) <- repIds.unnamed
