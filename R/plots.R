@@ -520,11 +520,10 @@ repPlot_differential <- function(
 	leafColors <- as.matrix(leafColors)
 	rownames(leafColors) <- repIds
 
-	if (getConfigElement("debug")) print(paste0("[DEBUG:]  Constructing repeat tree "))
-
+	# if (getConfigElement("debug")) print(paste0("[DEBUG:]  Constructing repeat tree "))
 	treeHm <- Heatmap(leafColors[,1,drop=FALSE], rect_gp=gpar(type = "none"),
 		cell_fun = function(j, i, x, y, w, h, fill) {
-			grid.circle(x=x, y=y, r=h*40, gp=gpar(col=NA, fill = leafColors[i,1]))
+			grid.circle(x=x, y=y, r=h*60, gp=gpar(col=NA, fill = leafColors[i,1]))
 		},
 		cluster_rows=repDend, cluster_columns=FALSE,
 		show_row_names=FALSE, show_column_names=FALSE, show_heatmap_legend=FALSE,
@@ -534,7 +533,7 @@ repPlot_differential <- function(
 	chm <- treeHm
 
 	for (i in 1:nComps){
-		if (getConfigElement("debug")) print(paste0("[DEBUG:]  adding data for comparison", i))
+		# if (getConfigElement("debug")) print(paste0("[DEBUG:]  adding data for comparison", i))
 		X.groupScores <- as.matrix(diffScores[[i]][, c("score.g1", "score.g2")])
 		colnames(X.groupScores) <- c(compInfo[[i]]$name.grp1, compInfo[[i]]$name.grp2)
 		rownames(X.groupScores) <- repIds.unnamed
@@ -543,12 +542,12 @@ repPlot_differential <- function(
 		if (is.null(zlimV[[i]]))	zlimV <- c(min(X.groupScores, na.rm=TRUE),max(X.groupScores,na.rm=TRUE))
 		colR.groupScores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.groupScore[[i]])), colorGradient.groupScore[[i]])
 
-		if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK1"))
+		# if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK1"))
 		X.diff <- as.matrix(diffScores[[i]][, c("diffScore")])
 		colnames(X.diff) <- paste0("diff_", compInfo[[i]]$cmpName)
 		rownames(X.diff) <- repIds.unnamed
 
-		if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK2"))
+		# if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK2"))
 
 		zlimV <- zlim.diff[[i]]
 		if (is.null(zlimV[[i]]))	zlimV <- c(min(X.diff, na.rm=TRUE),max(X.diff,na.rm=TRUE))
@@ -570,16 +569,7 @@ repPlot_differential <- function(
 				show_row_names=FALSE, cluster_columns=FALSE,
 				name=paste0("score_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp1)
 			)
-		}
 
-		chm <- chm + Heatmap(
-			X.groupScores[,1,drop=FALSE],
-			col = colR.groupScores,
-			show_row_names=FALSE,
-			name=paste0("gScore_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp1)
-		)
-
-		if (includeSampleScores){
 			chm <- chm + Heatmap(
 				Xs[, compInfo[[i]]$sampleIdx.grp2, drop=FALSE],
 				col = colR.scores,
@@ -588,11 +578,18 @@ repPlot_differential <- function(
 			)
 		}
 
+		# chm <- chm + Heatmap(
+		# 	X.groupScores[,1,drop=FALSE],
+		# 	col = colR.groupScores,
+		# 	show_row_names=FALSE,
+		# 	name=paste0("gScore_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp1)
+		# )
+
 		chm <- chm + Heatmap(
-			X.groupScores[,2,drop=FALSE],
+			X.groupScores,
 			col = colR.groupScores,
 			show_row_names=FALSE,
-			name=paste0("gScore_hm_", compInfo[[i]]$cmpName, "_", compInfo[[i]]$name.grp2)
+			name=paste0("gScore_hm_", compInfo[[i]]$cmpName)
 		)
 
 		chm <- chm + Heatmap(
@@ -701,16 +698,17 @@ createRepPlot_differential <- function(
 
 	colGrads.score <- rep(list(colorpanel(100,"#8C510A","#F5F5F5","#01665E")), length(markLvls))
 	colGrads.groupScore <- rep(list(colorpanel(100,"#EDF8B1","#41B6C4","#081D58")), length(markLvls))
-	colGrads.diff <- rep(list(colorpanel(100,"#b2182b","#F7F7F7","#2166ac")), length(markLvls))
+	colGrads.diff <- rep(list(colorpanel(100,"#2166ac","#F7F7F7","#b2182b")), length(markLvls))
 
 	zlims.score <- rep(list(c(-3, 3)), length(markLvls)) #chip-seq abs(log2FC) limit to range [-3,3]
 	zlims.groupScore <- rep(list(NULL), length(markLvls))
-	zlims.diff <- rep(list(NULL), length(markLvls))
+	zlims.diff <- rep(list(c(-4, 4)), length(markLvls))
 
 	indMeth <- match("DNAmeth", markLvls)
 	if (!is.na(indMeth)){
 		colGrads.score[[indMeth]] <- colorpanel(100,"#EDF8B1","#41B6C4","#081D58")
 		zlims.score[[indMeth]] <- c(0,1)
+		zlims.diff[[indMeth]] <- c(-1,1)
 	}
 	indAcc <- match("Acc", inferMarkTypes(markLvls))
 	if (!is.na(indAcc) && length(indAcc)){
