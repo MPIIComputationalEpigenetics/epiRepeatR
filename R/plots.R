@@ -608,9 +608,12 @@ repPlot_differential <- function(
 			col=colR.diff,
 			cell_fun = function(j, i, x, y, w, h, fill) {
 				fillCol <- NA
-			    if (pValVec[i] < 0.05) {
+			    if (pValVec[i] < 0.1) {
 					fillCol <- "black"
-					grid.text("*", x, y, gp = gpar(fontsize=10))
+					gt <- "*"
+					if (pValVec[i] < 0.05) gt <- "**"
+					if (pValVec[i] < 0.01) gt <- "***"
+					grid.text(gt, x, y)
 					grid.rect(x, y, w, h, gp = gpar(fill=NA, col=fillCol))
 				}
 			},
