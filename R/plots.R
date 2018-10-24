@@ -643,7 +643,8 @@ repPlot_differential <- function(
 			# 	width=unit(0.2, "npc")
 			# )
 			
-			Xs.reordered <- Xs[memIdx,]
+			# Xs.reordered <- Xs
+			Xs.reordered <- Xs[memIdx,] #ComplexHeatmap currently seems to have an indexing bug with custom rowAnnotation
 			rg <- range(Xs[, c(compInfo[[k]]$sampleIdx.grp1, compInfo[[k]]$sampleIdx.grp2)], na.rm=TRUE)
 			anno_multiple_boxplot <- function(index) {
 				pushViewport(viewport(xscale=rg, yscale=c(0.5, nReps+0.5)))
