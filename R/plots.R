@@ -526,7 +526,7 @@ repPlot_differential <- function(
 
 	memIdx <- match(getMemberAttr(repDend, "label"), repIds.unnamed)
 	print(str(memIdx)) #DEBUG
-	repDend <- setMemberAttr(repDend, "label", memIdx, unsetInternalNodes=TRUE)
+	repDend <- setMemberAttr(repDend, "${LABEL}", memIdx, unsetInternalNodes=TRUE)
 	saveRDS(repDend, TMP_FILE) #DEBUG TMP_FILE<-file.path("~/tmp_work/tmp.rds")
 
 	# if (getConfigElement("debug")) print(paste0("[DEBUG:]  Constructing repeat tree "))

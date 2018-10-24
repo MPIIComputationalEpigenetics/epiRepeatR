@@ -102,7 +102,15 @@ setMemberAttr <- function(tree, attrName, attrVals, unsetInternalNodes=FALSE){
 	res <- dendrapply(tree, function(x){
 		if (is.leaf(x)){
 			i <<- i + 1
-			attr(x, attrName) <- attrVals[i]
+			if (attrName=="${LABEL}") {
+				attrL <- attributes(x)
+				x <- attrVals[i]
+				attributes(x) <- attrL
+				attr(x, "label") <- attrVals[i]
+			} else {
+				attr(x, attrName) <- attrVals[i]
+			}
+			
 		} else if (unsetInternalNodes){
 			attr(x, attrName) <- NULL
 		}
