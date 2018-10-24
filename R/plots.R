@@ -642,7 +642,8 @@ repPlot_differential <- function(
 				}
 				popViewport()
 			}
-			chm <- chm + rowAnnotation(boxplot=anno_multiple_boxplot, width=unit(0.2, "npc"), show_annotation_name=FALSE)
+			# chm <- chm + rowAnnotation(boxplot=anno_multiple_boxplot, width=unit(0.2, "npc"), show_annotation_name=FALSE)
+			chm <- chm + rowAnnotation(boxplot=anno_multiple_boxplot, width=unit(4, "cm"), show_annotation_name=FALSE)
 		}
 	}
 
