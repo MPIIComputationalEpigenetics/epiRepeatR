@@ -525,9 +525,9 @@ repPlot_differential <- function(
 	rownames(leafColors) <- repIds
 
 	memIdx <- match(getMemberAttr(repDend, "label"), repIds.unnamed)
-	print(str(memIdx)) #DEBUG
+	# print(str(memIdx)) #DEBUG
 	repDend <- setMemberAttr(repDend, "${LABEL}", memIdx, unsetInternalNodes=TRUE)
-	saveRDS(repDend, TMP_FILE) #DEBUG TMP_FILE<-file.path("~/tmp_work/tmp.rds")
+	# saveRDS(repDend, TMP_FILE) #DEBUG TMP_FILE<-file.path("~/tmp_work/tmp.rds")
 
 	# if (getConfigElement("debug")) print(paste0("[DEBUG:]  Constructing repeat tree "))
 	treeHm <- Heatmap(leafColors[,1,drop=FALSE], rect_gp=gpar(type = "none"),
