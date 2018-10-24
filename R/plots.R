@@ -524,7 +524,9 @@ repPlot_differential <- function(
 	leafColors <- as.matrix(leafColors)
 	rownames(leafColors) <- repIds
 
-	repDend <- setMemberAttr(repDend, "label", match(getMemberAttr(repDend, "label"), repIds.unnamed), unsetInternalNodes=TRUE)
+	memIdx <- match(getMemberAttr(repDend, "label"), repIds.unnamed)
+	print(str(memIdx))
+	repDend <- setMemberAttr(repDend, "label", memIdx, unsetInternalNodes=TRUE)
 
 	# if (getConfigElement("debug")) print(paste0("[DEBUG:]  Constructing repeat tree "))
 	treeHm <- Heatmap(leafColors[,1,drop=FALSE], rect_gp=gpar(type = "none"),
