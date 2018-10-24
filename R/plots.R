@@ -524,10 +524,14 @@ repPlot_differential <- function(
 	leafColors <- as.matrix(leafColors)
 	rownames(leafColors) <- repIds
 
-	memIdx <- match(getMemberAttr(repDend, "label"), repIds.unnamed)
-	# print(str(memIdx)) #DEBUG
-	repDend <- setMemberAttr(repDend, "${LABEL}", memIdx, unsetInternalNodes=TRUE)
-	# saveRDS(repDend, TMP_FILE) #DEBUG TMP_FILE<-file.path("~/tmp_work/tmp.rds")
+	memLables <- getMemberAttr(repDend, "label")
+	if (!is.character(memLables)){
+		memIdx <- match(memLables, repIds.unnamed)
+		if (any(is.na(memIdx))) stop("Not all tree labels appear in the repeat annotation")
+		# print(str(memIdx)) #DEBUG
+		repDend <- setMemberAttr(repDend, "${LABEL}", memIdx, unsetInternalNodes=TRUE)
+		# saveRDS(repDend, TMP_FILE) #DEBUG TMP_FILE<-file.path("~/tmp_work/tmp.rds")
+	}
 
 	# if (getConfigElement("debug")) print(paste0("[DEBUG:]  Constructing repeat tree "))
 	treeHm <- Heatmap(leafColors[,1,drop=FALSE], rect_gp=gpar(type = "none"),
