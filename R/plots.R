@@ -525,7 +525,8 @@ repPlot_differential <- function(
 	rownames(leafColors) <- repIds
 
 	memLables <- getMemberAttr(repDend, "label")
-	if (!is.character(memLables)){
+	memIdx <- memLables
+	if (is.character(memLables)){
 		memIdx <- match(memLables, repIds.unnamed)
 		if (any(is.na(memIdx))) stop("Not all tree labels appear in the repeat annotation")
 		# print(str(memIdx)) #DEBUG
