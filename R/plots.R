@@ -476,7 +476,7 @@ repPlot_differential <- function(
 
 	repTree <- RepeatTree(repRef, method=dendroMethod)
 	repDend <- makeBinary(getDendrogram(repTree))
-	# repDend <- setMemberAttr(repDend, "label", getMemberAttr(repDend, "label"), unsetInternalNodes=TRUE)
+	
 
 	if (class(compInfo) == "comparisonInfo")   compInfo <- list(compInfo)
 	if (is.data.frame(diffScores) || !is.list(diffScores))  diffScores <- list(diffScores)
@@ -524,6 +524,8 @@ repPlot_differential <- function(
 	leafColors <- as.matrix(leafColors)
 	rownames(leafColors) <- repIds
 
+	repDend <- setMemberAttr(repDend, "label", match(getMemberAttr(repDend, "label"), repIds.unnamed), unsetInternalNodes=TRUE)
+
 	# if (getConfigElement("debug")) print(paste0("[DEBUG:]  Constructing repeat tree "))
 	treeHm <- Heatmap(leafColors[,1,drop=FALSE], rect_gp=gpar(type = "none"),
 		cell_fun = function(j, i, x, y, w, h, fill) {
@@ -533,7 +535,7 @@ repPlot_differential <- function(
 		show_row_names=FALSE, show_column_names=FALSE, show_heatmap_legend=FALSE,
 		name="tree"
 		# width=unit(0.1, "npc")
-	) + rowAnnotation(labels= anno_text(repIds, which = "row", just=c("left", "center")), width=unit(2, "cm"))#width=unit(0.2, "npc")) #interestingly, for custom dendrograms, repIds must be named
+	) + rowAnnotation(labels= anno_text(repIds, which = "row", just=c("left", "center")), width=unit(4, "cm"))#width=unit(0.2, "npc")) #interestingly, for custom dendrograms, repIds must be named
 	chm <- treeHm
 
 	for (k in 1:nComps){
