@@ -543,7 +543,7 @@ repPlot_differential <- function(
 		rownames(X.groupScores) <- repIds.unnamed
 
 		zlimV <- zlim.groupScore[[k]]
-		if (is.null(zlimV[[k]]))	zlimV <- c(min(X.groupScores, na.rm=TRUE),max(X.groupScores,na.rm=TRUE))
+		if (is.null(zlimV[[k]])) zlimV <- range(X.groupScores, na.rm=TRUE)
 		colR.groupScores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.groupScore[[k]])), colorGradient.groupScore[[k]])
 
 		# if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK1"))
@@ -554,7 +554,7 @@ repPlot_differential <- function(
 		# if (getConfigElement("debug")) print(paste0("[DEBUG:]    CHK2"))
 
 		zlimV <- zlim.diff[[k]]
-		if (is.null(zlimV[[k]]))	zlimV <- c(min(X.diff, na.rm=TRUE),max(X.diff,na.rm=TRUE))
+		if (is.null(zlimV[[k]])) zlimV <- range(X.diff, na.rm=TRUE)
 		colR.diff <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.diff[[k]])), colorGradient.diff[[k]])
 
 		colR.scores <- NULL
@@ -562,7 +562,7 @@ repPlot_differential <- function(
 		if (includeSampleScores){
 			Xs <- sampleScores[[k]][repIds.unnamed, ]
 			zlimV <- zlim.score[[k]]
-			if (is.null(zlimV[[k]]))	zlimV <- c(min(Xs,na.rm=TRUE),max(Xs,na.rm=TRUE))
+			if (is.null(zlimV[[k]])) zlimV <- range(Xs, na.rm=TRUE)
 			colR.scores <- colorRamp2(seq(zlimV[1], zlimV[2], length.out=length(colorGradient.score[[k]])), colorGradient.score[[k]])
 		}
 
@@ -627,11 +627,22 @@ repPlot_differential <- function(
 			
 
 		if (includeSampleScores){
-			chm <- chm + rowAnnotation(
-				g1 = row_anno_boxplot(Xs[, compInfo[[k]]$sampleIdx.grp1, drop=FALSE], axis=TRUE, gp=gpar(col="#1b7837")),
-   				g2 = row_anno_boxplot(Xs[, compInfo[[k]]$sampleIdx.grp2, drop=FALSE], axis=TRUE, gp=gpar(col="#762a83")),
-   				width=unit(0.2, "npc")
-   			)
+			# chm <- chm + rowAnnotation(
+			# 	g1 = row_anno_boxplot(Xs[, compInfo[[k]]$sampleIdx.grp1, drop=FALSE], axis=TRUE, gp=gpar(col="#1b7837")),
+			# 	g2 = row_anno_boxplot(Xs[, compInfo[[k]]$sampleIdx.grp2, drop=FALSE], axis=TRUE, gp=gpar(col="#762a83")),
+			# 	width=unit(0.2, "npc")
+			# )
+			
+			rg <- range(Xs[, c(compInfo[[k]]$sampleIdx.grp1, compInfo[[k]]$sampleIdx.grp2)], na.rm=TRUE)
+			anno_multiple_boxplot <- function(index) {
+				pushViewport(viewport(xscale=rg, yscale=c(0.5, nReps+0.5)))
+				for(i in index) {
+					grid.boxplot(Xs[i, compInfo[[k]]$sampleIdx.grp1], pos=nReps-i+1+0.2, box_width=0.3, gp=gpar(col="#1b7837"), direction="horizontal")
+					grid.boxplot(Xs[i, compInfo[[k]]$sampleIdx.grp2], pos=nReps-i+1-0.2, box_width=0.3, gp=gpar(col="#762a83"), direction="horizontal")
+				}
+				popViewport()
+			}
+			chm <- chm + rowAnnotation(boxplot=anno_multiple_boxplot, width=unit(0.2, "npc"), show_annotation_name=FALSE)
 		}
 	}
 
