@@ -644,6 +644,7 @@ repPlot_differential <- function(
 			
 			rg <- range(Xs[, c(compInfo[[k]]$sampleIdx.grp1, compInfo[[k]]$sampleIdx.grp2)], na.rm=TRUE)
 			anno_multiple_boxplot <- function(index) {
+				grid.yaxis()
 				pushViewport(viewport(xscale=rg, yscale=c(0.5, nReps+0.5)))
 				for(i in index) {
 					grid.boxplot(Xs[i, compInfo[[k]]$sampleIdx.grp1], pos=nReps-i+1+0.2, box_width=0.3, gp=gpar(col="#1b7837"), direction="horizontal")
