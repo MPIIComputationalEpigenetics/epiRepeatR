@@ -533,7 +533,7 @@ repPlot_differential <- function(
 		show_row_names=FALSE, show_column_names=FALSE, show_heatmap_legend=FALSE,
 		name="tree"
 		# width=unit(0.1, "npc")
-	) + rowAnnotation(labels= anno_text(repIds, which = "row", just=c("left", "center")), width=unit(0.2, "npc")) #interestingly, for custom dendrograms, repIds must be named
+	) + rowAnnotation(labels= anno_text(repIds, which = "row", just=c("left", "center")), width=unit(2, "cm"))#width=unit(0.2, "npc")) #interestingly, for custom dendrograms, repIds must be named
 	chm <- treeHm
 
 	for (k in 1:nComps){
