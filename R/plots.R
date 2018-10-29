@@ -637,22 +637,15 @@ repPlot_differential <- function(
 			
 
 		if (includeSampleScores){
-			# chm <- chm + rowAnnotation(
-			# 	g1 = row_anno_boxplot(Xs[, compInfo[[k]]$sampleIdx.grp1, drop=FALSE], axis=TRUE, gp=gpar(col="#1b7837")),
-			# 	g2 = row_anno_boxplot(Xs[, compInfo[[k]]$sampleIdx.grp2, drop=FALSE], axis=TRUE, gp=gpar(col="#762a83")),
-			# 	width=unit(0.2, "npc")
-			# )
-			
-			# Xs.reordered <- Xs
-			Xs.reordered <- Xs[memIdx,] #hack because ComplexHeatmap currently seems to have an indexing bug with custom rowAnnotation
 			rg <- range(Xs[, c(compInfo[[k]]$sampleIdx.grp1, compInfo[[k]]$sampleIdx.grp2)], na.rm=TRUE)
 			anno_multiple_boxplot <- function(index) {
-				pushViewport(viewport(xscale=rg, yscale=c(0.5, nReps+0.5)))
-				grid.xaxis()
-				for(i in index) {
-					grid.boxplot(Xs.reordered[i, compInfo[[k]]$sampleIdx.grp1], pos=nReps-i+1+0.2, box_width=0.3, gp=gpar(col="#1b7837"), direction="horizontal")
-					grid.boxplot(Xs.reordered[i, compInfo[[k]]$sampleIdx.grp2], pos=nReps-i+1-0.2, box_width=0.3, gp=gpar(col="#762a83"), direction="horizontal")
+				pushViewport(viewport(xscale = rg, yscale = c(0.5, nReps+0.5)))
+				for(i in seq_along(index)) {
+					grid.rect(y=nReps-i+1, height=1, default.units="native")
+					grid.boxplot(Xs[index[i], compInfo[[k]]$sampleIdx.grp1], pos=nReps-i+1+0.2, box_width=0.3, gp=gpar(fill="#1b7837"), direction="horizontal")
+					grid.boxplot(Xs[index[i], compInfo[[k]]$sampleIdx.grp2], pos=nReps-i+1-0.2, box_width=0.3, gp=gpar(fill="#762a83"), direction="horizontal")
 				}
+				grid.xaxis()
 				popViewport()
 			}
 			# chm <- chm + rowAnnotation(boxplot=anno_multiple_boxplot, width=unit(0.2, "npc"), show_annotation_name=FALSE)
