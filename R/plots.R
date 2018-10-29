@@ -642,8 +642,8 @@ repPlot_differential <- function(
 				pushViewport(viewport(xscale = rg, yscale = c(0.5, nReps+0.5)))
 				for(i in seq_along(index)) {
 					grid.rect(y=nReps-i+1, height=1, default.units="native")
-					grid.boxplot(Xs[index[i], compInfo[[k]]$sampleIdx.grp1], pos=nReps-i+1+0.2, box_width=0.3, gp=gpar(fill="#1b7837"), direction="horizontal")
-					grid.boxplot(Xs[index[i], compInfo[[k]]$sampleIdx.grp2], pos=nReps-i+1-0.2, box_width=0.3, gp=gpar(fill="#762a83"), direction="horizontal")
+					grid.boxplot(Xs[index[i], compInfo[[k]]$sampleIdx.grp1], pos=nReps-i+1+0.2, box_width=0.3, gp=gpar(col="#1b7837"), direction="horizontal")
+					grid.boxplot(Xs[index[i], compInfo[[k]]$sampleIdx.grp2], pos=nReps-i+1-0.2, box_width=0.3, gp=gpar(col="#762a83"), direction="horizontal")
 				}
 				grid.xaxis()
 				popViewport()
