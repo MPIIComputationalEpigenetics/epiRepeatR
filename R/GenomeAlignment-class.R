@@ -1,3 +1,6 @@
+#' @include GenomeRepeatTrack-class.R
+NULL
+
 setClassUnion("ListOrNULL", c("list", "NULL"))
 setClassUnion("GenomeRepeatTrackOrNULL", c("GenomeRepeatTrack", "NULL"))
 

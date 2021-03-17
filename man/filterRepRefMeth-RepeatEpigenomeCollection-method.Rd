@@ -9,7 +9,8 @@
 \S4method{filterRepRefMeth}{RepeatEpigenomeCollection}(.Object,
   minReads = getConfigElement("plotRepTree.meth.minReads"),
   minCpGs = getConfigElement("plotRepTree.meth.minCpGs"),
-  minCpGcov = getConfigElement("meth.minCpGcov"), covgType = "numReads")
+  minCpGcov = getConfigElement("meth.minCpGcov"),
+  covgType = "numReads")
 }
 \arguments{
 \item{.Object}{\code{\linkS4class{RepeatEpigenomeCollection}} object}

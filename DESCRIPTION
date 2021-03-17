@@ -4,7 +4,7 @@ Description: An R package for anlyzing the epigenetics of repetitive elements
 Authors@R: c(
     person("Fabian", "Mueller", email = "fmueller@mpi-inf.mpg.de",
     role = c("aut", "cre")))
-Date: 2018-07-24
+Date: 2018-10-15
 License: GPL-3
 Version: 0.9
 Depends:
@@ -19,24 +19,25 @@ Depends:
 Imports:
 Suggests:
     preprocessCore
-Collate:
-	'utils.R'
-	'config.R'
-	'dendrogram_extension.R'
-	'diagram_extension.R'
-	'AnalysisManager-class.R'
-	'repeatAnnotation.R'
-	'RepeatReference-class.R'
-	'RepeatTree-class.R'
-	'RepeatAlignment-class.R'
-	'RepeatEpigenomeCollection-class.R'
-	'GenomeRepeatTrack-class.R'
-	'GenomeAlignment-class.R'
-	'GenomeMethylationCalls-class.R'
-	'preprocessing.R'
-	'alignment.R'
-	'methylationCalling.R'
-	'plots.R'
-	'sandbox.R'
-	'main.R'
-RoxygenNote: 6.0.1
+Collate: 
+    'AnalysisManager-class.R'
+    'GenomeRepeatTrack-class.R'
+    'GenomeAlignment-class.R'
+    'GenomeMethylationCalls-class.R'
+    'RepeatAlignment-class.R'
+    'RepeatReference-class.R'
+    'RepeatEpigenomeCollection-class.R'
+    'RepeatTree-class.R'
+    'alignment.R'
+    'config.R'
+    'dendrogram_extension.R'
+    'diagram_extension.R'
+    'differential.R'
+    'main.R'
+    'methylationCalling.R'
+    'plots.R'
+    'preprocessing.R'
+    'repeatAnnotation.R'
+    'sandbox.R'
+    'utils.R'
+RoxygenNote: 6.1.0

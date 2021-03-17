@@ -1,3 +1,6 @@
+#' @include RepeatReference-class.R
+NULL
+
 setClassUnion("ListOrNULL", c("list", "NULL"))
 
 #' RepeatEpigenomeCollection Class
@@ -183,6 +186,10 @@ setMethod("show", "RepeatEpigenomeCollection",
 	}
 )
 
+################################################################################
+# Direct Accessors
+################################################################################
+
 if (!isGeneric("getSamples")) setGeneric("getSamples", function(.Object, ...) standardGeneric("getSamples"))
 #' getSamples-methods
 #'
@@ -298,6 +305,10 @@ setMethod("getRepRef", signature(.Object="RepeatEpigenomeCollection"),
 		return(.Object@repRef)
 	}
 )
+
+################################################################################
+# Getting Repeat Scores and Coverage
+################################################################################
 
 if (!isGeneric("getRepeatScores")) setGeneric("getRepeatScores", function(.Object, ...) standardGeneric("getRepeatScores"))
 #' getRepeatScores-methods
@@ -461,6 +472,165 @@ setMethod("getRepeatCovg", signature(.Object="RepeatEpigenomeCollection"),
 #NOTE: getRepeatCovg and getRepeatScores can lead to different repeat-sample combinations to be NA
 # for methylation, not all reads covering the repeat might have CpG information
 # for ChIPseq the coverage might be 0 for either the input or the chip
+
+
+################################################################################
+# Differential analysis
+################################################################################
+if (!isGeneric("getComparisonInfo")) setGeneric("getComparisonInfo", function(.Object, ...) standardGeneric("getComparisonInfo"))
+#' getComparisonInfo-methods
+#'
+#' Retrieve values of differential epigenetic quantifications for each RE in each sample
+#'
+#' @param .Object          \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param annotCol         name of the column in the sample annotation table on which the comparison is based
+#' @param name.grp1        name of the first group in the corresponding column of the sample annotation table
+#' @param name.grp2        name of the second group in the corresponding column of the sample annotation table
+#' @param cmpName          (optional) strings specifying a name for the comparison
+#' @param covariateCols    column names in the sample annotation table of potentially confounding covariates for the analysis
+#' @return Comparison information as structured \code{S3} object of class \code{comparisonInfo}
+#'
+#' @rdname getComparisonInfo-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getComparisonInfo
+#' @aliases getComparisonInfo,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
+setMethod("getComparisonInfo", signature(.Object="RepeatEpigenomeCollection"),
+	function(.Object, annotCol, name.grp1, name.grp2, cmpName=NULL, covariateCols=character(0)){
+		annotTab <- getAnnot(.Object)
+		if (!is.element(annotCol, colnames(annotTab))) stop(paste0("Unknown sample annotation column:", annotCol))
+		if (!all(covariateCols %in% colnames(annotTab))) stop(paste0("Not all covariate columns are contained in the sample annotation table"))
+
+		covariateCols <- setdiff(covariateCols, annotCol)
+		if (is.null(cmpName)){
+			cmpName <- paste(annotCol, "cmp", name.grp1, "vs", name.grp2, sep="_")
+		}
+		sampleIdx.grp1 <- which(annotTab[,annotCol]==name.grp1)
+		if (length(sampleIdx.grp1) < 1) stop(paste0("No samples found for group ", name.grp1, " in sample annotation column ", annotCol))
+		sampleIdx.grp2 <- which(annotTab[,annotCol]==name.grp2)
+		if (length(sampleIdx.grp2) < 1) stop(paste0("No samples found for group ", name.grp2, " in sample annotation column ", annotCol))
+
+		cmpInfo <- list(
+			cmpName=cmpName,
+			name.grp1=name.grp1,
+			name.grp2=name.grp2,
+			sampleIdx.grp1=sampleIdx.grp1,
+			sampleIdx.grp2=sampleIdx.grp2,
+			annotCol=annotCol,
+			covariateCols=covariateCols,
+			designF=as.formula(paste0("~", paste(c(covariateCols, annotCol),collapse="+")))
+		)
+		class(cmpInfo) <- "comparisonInfo"
+		return(cmpInfo)
+	}
+)
+
+if (!isGeneric("getComparisons")) setGeneric("getComparisons", function(.Object, ...) standardGeneric("getComparisons"))
+#' getComparisons-methods
+#'
+#' Retrieve a list of \code{comparisonInfo} objects based
+#'
+#' @param .Object          \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param annotCols        names of the column in the sample annotation table on which the comparisons are based.
+#'                         \code{NULL} (default) indicates that all columns will be inspected for compatible comparisons
+#' @param minGroupSize     minimum number of samples to be considered a group
+#' @param maxGroupCount    maximum number of groups in each sample annotation column
+#' @param allPairwise      if more than two groups exist for a sample annotation column, should all pairwise comparisons be conducted (as opposed to one vs all).
+#'                         currently the only allowed value is \code{TRUE} (default)
+#' @param covariateCols    column names in the sample annotation table of potentially confounding covariates for the analysis
+#' @return List of comparison information objects (structured \code{S3} object of class \code{comparisonInfo})
+#'
+#' @rdname getComparisons-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getComparisons
+#' @aliases getComparisons,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
+setMethod("getComparisons", signature(.Object="RepeatEpigenomeCollection"),
+	function(.Object, annotCols=NULL, minGroupSize=2L, maxGroupCount=2, allPairwise=TRUE, covariateCols=character(0)){
+		annotTab <- getAnnot(.Object)
+		if (length(annotCols) < 1) annotCols <- colnames(annotTab)
+		res <- list()
+		for (cc in annotCols){
+			grpCounts <- table(annotTab[,cc])
+			grpCounts <- grpCounts[grpCounts>minGroupSize]
+			nGroups <- length(grpCounts)
+			if (nGroups > 1 && nGroups <= maxGroupCount){
+				if (nGroups == 2){
+					res <- c(res, list(getComparisonInfo(.Object, cc, names(grpCounts)[1], names(grpCounts)[2], covariateCols=covariateCols)))
+				} else {
+					if (allPairwise){
+						groupNamePairs <- t(combn(names(grpCounts),2))
+						for (i in 1:nrow(groupNamePairs)){
+							res <- c(res, list(getComparisonInfo(.Object, cc, groupNamePairs[i,1], groupNamePairs[i,2], covariateCols=covariateCols)))
+						}
+					} else {
+						stop("one vs all comparisons are not yet supported")
+					}
+				}
+			}
+		}
+		if (length(res) > 0) {
+			names(res) <- sapply(res, FUN=function(x){x$cmpName})
+		}
+		return(res)
+	}
+)
+
+if (!isGeneric("getRepeatScoresDiff")) setGeneric("getRepeatScoresDiff", function(.Object, ...) standardGeneric("getRepeatScoresDiff"))
+#' getRepeatScoresDiff-methods
+#'
+#' Retrieve values of differential epigenetic quantifications for each RE in each sample
+#'
+#' @param .Object          \code{\linkS4class{RepeatEpigenomeCollection}} object
+#' @param mark             Epigenetic mark for which the score information is retrieved
+#' @param compInfo         \code{S3} object of class \code{comparisonInfo} as returned by \code{\link{getComparisonInfo,RepeatEpigenomeCollection-method}}
+#'                         or \code{\link{getComparisons,RepeatEpigenomeCollection-method}}
+#' @return A matrix with differential statistics for each repeat subfamily.
+#'
+#' @rdname getRepeatScoresDiff-RepeatEpigenomeCollection-method
+#' @docType methods
+#' @aliases getRepeatScoresDiff
+#' @aliases getRepeatScoresDiff,RepeatEpigenomeCollection-method
+#' @author Fabian Mueller
+#' @export
+setMethod("getRepeatScoresDiff", signature(.Object="RepeatEpigenomeCollection"),
+	function(.Object, mark, compInfo){
+		if (!is.element(mark, getMarks(.Object))){
+			stop(paste0("unknown mark:", mark))
+		}
+		if (class(compInfo) != "comparisonInfo") {
+			stop("Invalid compInfo paramater. Expected 'comparisonInfo' object")
+		}
+		markType <- inferMarkTypes(mark)
+		repRefNames <- getRepeatIds(getRepRef(.Object))
+		diffScores <- NULL
+		if (markType == "DNAmeth"){
+			stop(paste0("Don't know how to compute differential methylation yet"))
+		} else if (is.element(markType, c("ChIPseq", "Acc"))){
+			countMat <- getRepeatCovg(.Object, mark)
+			if (all(is.na(countMat))) return(NULL)
+			dm <- computeDiffMat.counts.deseq2(countMat, getAnnot(.Object), compInfo$designF, compInfo$annotCol, compInfo$name.grp1, compInfo$name.grp2)
+			diffScores <- data.frame(
+				diffScore=dm[,"log2FoldChange"],
+				diffPval=dm[,"pvalue"],
+				diffPval.adj=dm[,"padj"],
+				diffRank=dm[,"cRank_rerank"],
+				score.g1=log2(dm[,"baseMean.g1"]),
+				score.g2=log2(dm[,"baseMean.g2"])
+			)
+		} else {
+			stop(paste0("Unknown data type for mark:",mark))
+		}
+		rownames(diffScores) <- repRefNames
+		return(diffScores)
+	}
+)
+
+################################################################################
+# Filtering
+################################################################################
 
 if (!isGeneric("filterRepRefMeth")) setGeneric("filterRepRefMeth", function(.Object, ...) standardGeneric("filterRepRefMeth"))
 #' filterRepRefMeth-methods

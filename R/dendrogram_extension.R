@@ -20,13 +20,14 @@ isLeaf <- function(dend){
 #' @param dendroList	list of dendrograms
 #' @param height		height (will be set as attribute) on which to merge the dendrograms
 #' @param midpoint		midpoint attribute that will be set in the resulting dendrogram
+#' @param label			label attribute that will be assigned to the resulting dendrogram
 #' @return a dendrogram object with the dendrograms from the input list as branches
 #'
 #' @author Fabian Mueller
 #' @noRd
-dendrogramMergeSimple <- function(dendroList, height=NA, midpoint=NULL){
+dendrogramMergeSimple <- function(dendroList, height=NA, midpoint=NULL, label=NULL){
 	res <- dendroList
-	subTreeMems <- sapply(dend,FUN=function(x){attr(x,"members")})
+	subTreeMems <- sapply(res,FUN=function(x){attr(x,"members")})
 	attr(res,"members") <- sum(subTreeMems)
 	attr(res,"height") <- height
 	if (is.null(midpoint)){
@@ -34,6 +35,7 @@ dendrogramMergeSimple <- function(dendroList, height=NA, midpoint=NULL){
 	} else {
 		attr(res,"midpoint") <- midpoint
 	}
+	if (!is.null(label)) attr(res,"label") <- label
 	class(res) <- "dendrogram"
 	return(res)
 }
@@ -74,6 +76,7 @@ getMemberAttr <- function(tree, attrName){
 #' @param tree		a dendrogram
 #' @param attrName	the name of the attribute to be set
 #' @param attrVals	a vector of values to be set for the leafs
+#' @param unsetInternalNodes	should the attribute for internal nodes be set to NULL
 #' @return a dendrogram in which the attributes for the leafs/members have been set to correspong values
 #'
 #' @author Fabian Mueller
@@ -87,7 +90,7 @@ getMemberAttr <- function(tree, attrName){
 #' res <- setMemberAttribute(dend, "someNum", sample(1:10,N,replace=TRUE))
 #' str(unclass(res))
 #' }
-setMemberAttr <- function(tree, attrName, attrVals){
+setMemberAttr <- function(tree, attrName, attrVals, unsetInternalNodes=FALSE){
 	Nmem <- attr(tree,"members")
 	if (length(attrVals)==1){
 		attrVals <- rep(attrVals,Nmem)
@@ -99,7 +102,17 @@ setMemberAttr <- function(tree, attrName, attrVals){
 	res <- dendrapply(tree, function(x){
 		if (is.leaf(x)){
 			i <<- i + 1
-			attr(x, attrName) <- attrVals[i]
+			if (attrName=="${LABEL}") {
+				attrL <- attributes(x)
+				x <- attrVals[i]
+				attributes(x) <- attrL
+				attr(x, "label") <- attrVals[i]
+			} else {
+				attr(x, attrName) <- attrVals[i]
+			}
+			
+		} else if (unsetInternalNodes){
+			attr(x, attrName) <- NULL
 		}
 		return(x)
 	})
@@ -245,5 +258,43 @@ adjustAttr.midpoint <- function(tree){
 		attr(x, "midpoint") <- ifelse(nMems > 1, (nMems-1)/2, 0)
 		return(x)
 	})
+	return(res)
+}
+
+#' makeBinary
+#'
+#' convert a dendrogram to a binary tree, i.e. each node is either a leaf or has exactly two children
+#' (recursive function)
+#' 
+#' @param tree  the dendrogram to which the adjustment should be applied
+#' @param epsilon a small number that will be used for pseudosplitting nodes with more than two children at different heights
+#'
+#' @return the modified dendrogram
+#'
+#' @author Fabian Mueller
+#' @noRd
+makeBinary <- function(tree, eps=1e-6){
+	if (is.leaf(tree)) return(tree)
+	if (length(tree)==2){
+		return(dendrogramMergeSimple(list(makeBinary(tree[[1]], eps=eps), makeBinary(tree[[2]], eps=eps)), height=attr(tree,"height"), midpoint=attr(tree,"midpoint"), label=attr(tree,"label")))
+	}
+	if (length(tree)==1){
+		#only 1 member: traverse down until the tree is either a leaf or not linear any more
+		subTree <- tree[[1]] #dendrogramMergeSimple(tree[1],  height=attr(tree,"height"), midpoint=attr(tree,"midpoint"), label=NULL)
+		attr(subTree, "height") <- attr(tree,"height") # Re-adjust the height
+		attr(subTree, "midpoint") <- attr(tree,"midpoint") # Re-adjust the midpoint
+		res <- makeBinary(subTree, eps=eps)
+		return(res)
+	}
+	# more than 2 members
+	tree.left <- makeBinary(tree[[1]])
+	nMems.left <- attr(tree.left,"members")
+	attr(tree.left, "midpoint") <- ifelse(nMems.left > 1, (nMems.left-1)/2, 0)
+
+	tree.right <- makeBinary(dendrogramMergeSimple(tree[2:length(tree)], height=attr(tree,"height")-eps, label=attr(tree,"label")), eps=eps)
+	nMems.right <- attr(tree.right,"members")
+	attr(tree.right, "midpoint") <- ifelse(nMems.right > 1, (nMems.right-1)/2, 0)
+
+	res <- dendrogramMergeSimple(list(tree.left, tree.right), height=attr(tree,"height"), midpoint=attr(tree,"midpoint"), label=attr(tree,"label"))
 	return(res)
 }
